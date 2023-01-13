@@ -14,7 +14,22 @@
           class="span-button button positive"
           v-on:click="this.evaluateCondition"
         >
-          calcular
+          registrar
+        </button>
+      </div>
+    </div>
+
+    <div v-if="historyExists" class="card">
+      <div class="flex-layout justify-space-between">
+        <span>Novo depósito</span>
+        <input v-model="formGrossAmountUpdate" />
+      </div>
+      <div class="flex-layout">
+        <button
+          class="span-button button positive"
+          v-on:click="this.addToGrossAmount"
+        >
+          registrar
         </button>
       </div>
     </div>
@@ -89,6 +104,7 @@ export default {
       historyExists: false,
       formGrossAmount: null,
       formCurrentAmount: null,
+      formGrossAmountUpdate: null,
       history: [],
       editForm: false,
       formEditHistory: null,
@@ -241,11 +257,21 @@ export default {
       this.resetForm();
       if (!this.historyExists) this.historyExists = true;
     },
+    addToGrossAmount() {
+      let currentAmount = parseFloat(this.history[this.history.length - 1].currentAmount)
+      let grossAmount = parseFloat(this.history[this.history.length - 1].grossAmount)
+      let newAmount = parseFloat(this.formGrossAmountUpdate)
+      this.history[this.history.length - 1].grossAmount =  `${newAmount + grossAmount}`
+      this.history[this.history.length - 1].currentAmount = `${newAmount + currentAmount}`
+      localStorage.setItem("history", JSON.stringify(this.history));
+      this.resetForm();
+    },
     updateHistory() {
       this.history = JSON.parse(localStorage.history);
     },
     resetForm() {
       this.formGrossAmount = null;
+      this.formGrossAmountUpdate = null;
       this.formCurrentAmount = null;
       this.formEditHistory = null;
       this.editForm = false;
