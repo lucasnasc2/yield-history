@@ -99,8 +99,11 @@ export default {
   },
   computed: {
     chartData() {
+      const percentage = function (partialValue, totalValue) {
+   return ((100 * partialValue) / totalValue).toFixed(2) + "%";
+} 
       let dataArray = this.history.map((a) => a.dailyYield);
-      let labelArray = this.history.map((a) => a.currentAmount);
+      let labelArray = this.history.map((a) => percentage(a.dailyYield,a.currentAmount));
       let data = {
         labels: labelArray,
         datasets: [
