@@ -39,7 +39,7 @@
       </div>
       <div class="flex-layout" v-if="!this.editForm">
         <button class="span-button button" v-on:click="this.openEditHistory">
-          edit history
+          editar registro
         </button>
       </div>
 
@@ -58,19 +58,19 @@
             class="grow1 button negative"
             v-on:click="this.cancelEditHistory"
           >
-            cancel
+            cancelar
           </button>
           <button
             class="grow1 button positive"
             v-on:click="this.saveEditHistory"
           >
-            save
+            salvar
           </button>
         </div>
       </div>
       <div class="flex-layout" v-if="this.historyExists">
         <button class="span-button button" v-on:click="this.deleteAllData">
-          Apagar registro
+          apagar registro
         </button>
       </div>
     </div>
