@@ -289,6 +289,10 @@ export default {
         this.history[this.history.length - 1].grossAmount
       );
       let newAmount = parseFloat(this.formGrossAmountUpdate);
+      if (newAmount <= 0 || !newAmount) {
+        alert("Formulário vazio")
+        return
+      }
       this.history[this.history.length - 1].grossAmount = `${
         newAmount + grossAmount
       }`;
