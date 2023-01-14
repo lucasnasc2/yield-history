@@ -3,11 +3,11 @@
     <div class="card">
       <div v-if="!historyExists" class="flex-layout justify-space-between">
         <span>Montante Bruto</span>
-        <input v-model="formGrossAmount" />
+        <input type="number" v-model="formGrossAmount" />
       </div>
       <div class="flex-layout justify-space-between">
         <span>Montante Atual</span>
-        <input v-model="formCurrentAmount" />
+        <input type="number" v-model="formCurrentAmount" />
       </div>
       <div class="flex-layout">
         <button
@@ -22,7 +22,7 @@
     <div v-if="historyExists" class="card">
       <div class="flex-layout justify-space-between">
         <span>Novo depósito</span>
-        <input v-model="formGrossAmountUpdate" />
+        <input type="number" v-model="formGrossAmountUpdate" />
       </div>
       <div class="flex-layout">
         <button
@@ -116,17 +116,30 @@ export default {
   computed: {
     chartData() {
       const percentage = function (partialValue, totalValue) {
-   return ((100 * partialValue) / totalValue).toFixed(2) + "%";
-} 
-      let dataArray = this.history.map((a) => a.dailyYield);
-      let labelArray = this.history.map((a) => percentage(a.dailyYield,a.currentAmount));
+        return ((100 * partialValue) / totalValue).toFixed(3);
+      };
+      let dailyYieldArray = this.history.map((a) => a.dailyYield);
+      let percentageDailyYieldArray = this.history.map((a) =>
+        percentage(a.dailyYield, a.currentAmount)
+      );
+      let labelArray = this.history.map((a) => {
+        let date = new Date(a.timestamp);
+        return date.toLocaleDateString("en-US");
+      });
       let data = {
         labels: labelArray,
         datasets: [
           {
-            label: "Rendimento diário",
+            label: "R$",
             backgroundColor: "#ba4de3",
-            data: dataArray,
+            data: dailyYieldArray,
+            yAxisID: "y",
+          },
+          {
+            label: "%",
+            backgroundColor: "#530082",
+            data: percentageDailyYieldArray,
+            yAxisID: "y1",
           },
         ],
       };
@@ -141,12 +154,19 @@ export default {
       let filteredArray = this.filterWeekendsFromInterval(lastUpdate, today);
       return filteredArray.length - 1;
     },
+    checkStillSameDay() {
+      let today = (new Date()).toString();
+      let lastUpdate = (new Date(this.history[this.history.length - 1].timestamp)).toString();
+      let todayWeekday = today.substring(0, 3) 
+      let lastUpdateWeekday = lastUpdate.substring(0, 3) 
+      return todayWeekday === lastUpdateWeekday
+    },
     filterWeekendsFromInterval(start, end) {
       let days = getDays(start, end);
       let daysWithoutWeekends = [];
       days.forEach((day) => {
         let d = day.toString();
-        if (d.includes("Sat") || d.includes("Sun")) return;
+        if (d.includes("Sun") || d.includes("Mon")) return;
         daysWithoutWeekends.push(day);
       });
       return daysWithoutWeekends;
@@ -176,7 +196,7 @@ export default {
       );
     },
     getArrayOfMissingData(days) {
-      let grossAmount = this.getSavedGrossAmount();
+      let grossAmount = this.history[this.history.length - 1].grossAmount;
       let arrayOfMissingData = [];
       for (let i = 0; i < days; i++) {
         let totalYield = this.formCurrentAmount - grossAmount;
@@ -184,7 +204,7 @@ export default {
           grossAmount: grossAmount,
           currentAmount: this.formCurrentAmount,
           totalYield: totalYield.toFixed(2),
-          dailyYield: this.getDailyYield(days),
+          dailyYield: this.getDailyYield(days).toFixed(2),
           timestamp: Date.now(),
         };
 
@@ -193,12 +213,13 @@ export default {
       return arrayOfMissingData;
     },
     evaluateCondition() {
-      if (!this.formGrossAmount || !this.formCurrentAmount) return
       if (this.historyExists) {
         let days = this.daysSinceLastUpdate();
         if (!days) {
-          alert("Esperar 24h.");
-          return;
+          if(this.checkStillSameDay()) {
+            alert("Esperar 24h.");
+            return;
+          }
         }
         if (this.invalidDay()) {
           alert("Esperar até o fim do proximo dia útil.");
@@ -217,13 +238,13 @@ export default {
         return;
       }
       let days = this.daysSinceLastUpdate();
-      if (days === 1) {
+      if (days <= 1) {
         let totalYield = this.formCurrentAmount - grossAmount;
         let amountObject = {
           grossAmount: grossAmount,
           currentAmount: this.formCurrentAmount,
           totalYield: totalYield.toFixed(2),
-          dailyYield: this.getDailyYield(),
+          dailyYield: this.getDailyYield(1).toFixed(2),
           timestamp: Date.now(),
         };
 
@@ -236,6 +257,10 @@ export default {
       }
     },
     calculateFirstTime() {
+      if (!this.formGrossAmount || !this.formCurrentAmount) {
+        alert("Formulário vazio")
+        return
+      }
       let grossAmount = this.formGrossAmount;
 
       let totalYield = this.formCurrentAmount - grossAmount;
@@ -252,17 +277,24 @@ export default {
     },
     saveResult(result) {
       this.history.push(result);
-      console.log(this.history);
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
       if (!this.historyExists) this.historyExists = true;
     },
     addToGrossAmount() {
-      let currentAmount = parseFloat(this.history[this.history.length - 1].currentAmount)
-      let grossAmount = parseFloat(this.history[this.history.length - 1].grossAmount)
-      let newAmount = parseFloat(this.formGrossAmountUpdate)
-      this.history[this.history.length - 1].grossAmount =  `${newAmount + grossAmount}`
-      this.history[this.history.length - 1].currentAmount = `${newAmount + currentAmount}`
+      let currentAmount = parseFloat(
+        this.history[this.history.length - 1].currentAmount
+      );
+      let grossAmount = parseFloat(
+        this.history[this.history.length - 1].grossAmount
+      );
+      let newAmount = parseFloat(this.formGrossAmountUpdate);
+      this.history[this.history.length - 1].grossAmount = `${
+        newAmount + grossAmount
+      }`;
+      this.history[this.history.length - 1].currentAmount = `${
+        newAmount + currentAmount
+      }`;
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
     },
