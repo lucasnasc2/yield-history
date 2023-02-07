@@ -352,7 +352,7 @@ export default {
       let amountArray = [];
       let yieldArray = [];
       days.forEach((day, i) => {
-        let total = i ? amountArray[i - 1] : latest.currentAmount;
+        let total = i ? parseFloat(amountArray[i - 1]) : parseFloat(latest.currentAmount);
         let currentYield = (yieldPercent / 100) * total;
         let newTotal = total + currentYield;
         amountArray.push(newTotal);
