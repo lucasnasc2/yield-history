@@ -1,8 +1,5 @@
 <template>
   <div id="app">
-    <button v-if="updateExists" @click="refreshApp" class="btn">
-      New version available! Click to update
-    </button>
     <header class="header">Registro de rendimentos</header>
     <hello-world></hello-world>
   </div>

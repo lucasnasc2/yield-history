@@ -50,6 +50,10 @@ export default {
       type: String,
       default: "line-chart",
     },
+    title: {
+      type: String,
+      default: "no title",
+    },
     datasetIdKey: {
       type: String,
       default: "label",
@@ -79,34 +83,34 @@ export default {
     return {
       chartOptions: {
         responsive: true,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    stacked: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'Rendimento diário'
-      }
-    },
-    scales: {
-      y: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-      },
-      y1: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-
-        // grid line settings
-        grid: {
-          drawOnChartArea: false, // only want the grid lines for one axis to show up
+        interaction: {
+          mode: "index",
+          intersect: false,
         },
-      },
-    }
+        stacked: false,
+        plugins: {
+          title: {
+            display: true,
+            text: this.title,
+          },
+        },
+        scales: {
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
+          },
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
+
+            // grid line settings
+            grid: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
+            },
+          },
+        },
       },
     };
   },

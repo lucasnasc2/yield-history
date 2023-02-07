@@ -50,7 +50,13 @@
         </div>
       </div>
       <div class="card">
-        <chart :chart-data="this.chartData" />
+        <chart
+          :title="'Rendimento diário'"
+          :chart-data="this.historyChartData"
+        />
+      </div>
+      <div class="card">
+        <chart :title="'Projeção'" :chart-data="this.projectionChartData" />
       </div>
       <div class="flex-layout" v-if="!this.editForm">
         <button class="span-button button" v-on:click="this.openEditHistory">
@@ -94,8 +100,13 @@
 
 <script>
 import chart from "./chart.vue";
-
 import getDays from "../misc/getDaysFromInterval.js";
+let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+let locale = Intl.DateTimeFormat().resolvedOptions().locale;
+
+const percentage = (partialValue, totalValue) => {
+  return ((100 * partialValue) / totalValue).toFixed(3);
+};
 export default {
   name: "HelloWorld",
   components: { chart },
@@ -114,17 +125,16 @@ export default {
     this.checkHistory();
   },
   computed: {
-    chartData() {
-      const percentage = function (partialValue, totalValue) {
-        return ((100 * partialValue) / totalValue).toFixed(3);
-      };
+    historyChartData() {
       let dailyYieldArray = this.history.map((a) => a.dailyYield);
       let percentageDailyYieldArray = this.history.map((a) =>
         percentage(a.dailyYield, a.currentAmount)
       );
       let labelArray = this.history.map((a) => {
         let date = new Date(a.timestamp);
-        return date.toLocaleDateString("en-US");
+        return date.toLocaleDateString(locale, {
+          timeZone: tz,
+        });
       });
       let data = {
         labels: labelArray,
@@ -145,6 +155,27 @@ export default {
       };
       return data;
     },
+    projectionChartData() {
+      const { days, yieldArray, amountArray } = this.calculateProjection(12);
+      let data = {
+        labels: days,
+        datasets: [
+          {
+            label: "Total R$",
+            backgroundColor: "#ba4de3",
+            data: amountArray,
+            yAxisID: "y",
+          },
+          {
+            label: "Diário R$",
+            backgroundColor: "#530082",
+            data: yieldArray,
+            yAxisID: "y1",
+          },
+        ],
+      };
+      return data;
+    },
   },
   watch: {},
   methods: {
@@ -155,11 +186,13 @@ export default {
       return filteredArray.length - 1;
     },
     checkStillSameDay() {
-      let today = (new Date()).toString();
-      let lastUpdate = (new Date(this.history[this.history.length - 1].timestamp)).toString();
-      let todayWeekday = today.substring(0, 3) 
-      let lastUpdateWeekday = lastUpdate.substring(0, 3) 
-      return todayWeekday === lastUpdateWeekday
+      let today = new Date().toString();
+      let lastUpdate = new Date(
+        this.history[this.history.length - 1].timestamp
+      ).toString();
+      let todayWeekday = today.substring(0, 3);
+      let lastUpdateWeekday = lastUpdate.substring(0, 3);
+      return todayWeekday === lastUpdateWeekday;
     },
     filterWeekendsFromInterval(start, end) {
       let days = getDays(start, end);
@@ -216,7 +249,7 @@ export default {
       if (this.historyExists) {
         let days = this.daysSinceLastUpdate();
         if (!days) {
-          if(this.checkStillSameDay()) {
+          if (this.checkStillSameDay()) {
             alert("Esperar 24h.");
             return;
           }
@@ -258,8 +291,8 @@ export default {
     },
     calculateFirstTime() {
       if (!this.formGrossAmount || !this.formCurrentAmount) {
-        alert("Formulário vazio")
-        return
+        alert("Formulário vazio");
+        return;
       }
       let grossAmount = this.formGrossAmount;
 
@@ -290,8 +323,8 @@ export default {
       );
       let newAmount = parseFloat(this.formGrossAmountUpdate);
       if (newAmount <= 0 || !newAmount) {
-        alert("Formulário vazio")
-        return
+        alert("Formulário vazio");
+        return;
       }
       this.history[this.history.length - 1].grossAmount = `${
         newAmount + grossAmount
@@ -301,6 +334,33 @@ export default {
       }`;
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
+    },
+    calculateProjection(months) {
+      let latest = this.history[this.history.length - 1];
+      let initialTs = latest.timestamp;
+      let date = new Date(initialTs);
+      let futureTs = date.setMonth(date.getMonth() + months).valueOf();
+      let days = this.filterWeekendsFromInterval(initialTs, futureTs).map(
+        (day) =>
+          day.toLocaleDateString(locale, {
+            timeZone: tz,
+          })
+      );
+      let yieldPercent = parseFloat(
+        percentage(latest.dailyYield, latest.currentAmount)
+      );
+      let amountArray = [];
+      let yieldArray = [];
+      days.forEach((day, i) => {
+        let total = i ? amountArray[i - 1] : latest.currentAmount;
+        let currentYield = (yieldPercent / 100) * total;
+        let newTotal = total + currentYield;
+        amountArray.push(newTotal);
+        yieldArray.push(currentYield);
+      });
+      amountArray = amountArray.map((i) => i.toFixed(2));
+      yieldArray = yieldArray.map((i) => i.toFixed(2));
+      return { yieldArray, amountArray, days };
     },
     updateHistory() {
       this.history = JSON.parse(localStorage.history);
@@ -343,7 +403,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .wrapper {
-  padding: 0 20px;
+  padding: 0 10px;
 }
 .flex-layout {
   width: 100%;
