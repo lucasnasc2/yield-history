@@ -49,4 +49,10 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+input {
+  padding: 3px 6px !important;
+}
+textarea {
+  padding: 3px !important;
+}
 </style>
