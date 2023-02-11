@@ -5,48 +5,86 @@
         <span>Montante Bruto</span>
         <input type="number" v-model="formGrossAmount" />
       </div>
-      <div class="flex-layout justify-space-between">
+      <div class="flex-layout justify-space-between pb-2">
         <span>Montante Atual</span>
-        <input type="number" v-model="formCurrentAmount" />
+        <input
+          class="border-solid border-1 rounded-lg border-gray-500"
+          type="number"
+          v-model="formCurrentAmount"
+        />
       </div>
-      <div class="flex-layout">
-        <button
-          class="span-button button positive"
-          v-on:click="evaluateCondition"
-        >
+      <div class="flex-layout justify-end max-width">
+        <button class="button positive" v-on:click="evaluateCondition">
           registrar
         </button>
       </div>
     </div>
 
     <div v-if="historyExists" class="card">
-      <div class="flex-layout justify-space-between">
+      <div class="flex-layout justify-space-between pb-2">
         <span>Novo depósito</span>
-        <input type="number" v-model="formGrossAmountUpdate" />
+        <input
+          class="border-solid border-1 rounded-lg border-gray-500"
+          type="number"
+          v-model="formGrossAmountUpdate"
+        />
       </div>
-      <div class="flex-layout">
-        <button
-          class="span-button button positive"
-          v-on:click="addToGrossAmount"
-        >
+      <div class="flex-layout justify-end max-width">
+        <button class="button positive" v-on:click="addToGrossAmount">
           registrar
         </button>
       </div>
     </div>
-
+    <div class="card">
+      <div class="flex-layout justify-space-between pb-2">
+        <span>Moeda</span>
+        <select
+          class="border-solid border-1 rounded-lg border-gray-500"
+          v-model="formCurrencySource"
+        >
+          <option v-for="item in currencyList" :key="item" :value="item">
+            {{ item }}
+          </option>
+        </select>
+        <span>→</span>
+        <select
+          class="border-solid border-1 rounded-lg border-gray-500"
+          v-model="formCurrencyTarget"
+        >
+          <option v-for="item in currencyList" :key="item" :value="item">
+            {{ item }}
+          </option>
+        </select>
+      </div>
+      <div class="flex-layout justify-space-between pb-2">
+        <span>Taxa</span>
+        <span>{{ currencyRate }}</span>
+      </div>
+      <div class="flex-layout justify-end max-width">
+        <button
+          :class="currencyConverter ? 'bg-gray-200' : 'positive'"
+          class="button"
+          v-on:click="currencyConverter = !currencyConverter"
+        >
+          {{ currencyConverter ? "Original" : "Converter" }}
+        </button>
+      </div>
+    </div>
     <div v-if="historyExists">
       <div class="card">
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante total</span>
-          <span>{{ history[history.length - 1].currentAmount }}</span>
+          <span>{{
+            converter(history[history.length - 1].currentAmount)
+          }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante bruto</span>
-          <span>{{ history[history.length - 1].grossAmount }}</span>
+          <span>{{ converter(history[history.length - 1].grossAmount) }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Rendimento total</span>
-          <span>{{ history[history.length - 1].totalYield }}</span>
+          <span>{{ converter(history[history.length - 1].totalYield) }}</span>
         </div>
       </div>
       <div class="card">
@@ -55,15 +93,11 @@
       <div class="card">
         <chart :title="'Projeção'" :chart-data="projectionChartData" />
       </div>
-      <div class="flex-layout" v-if="!editForm">
-        <button class="span-button button" v-on:click="openEditHistory">
-          editar registro
-        </button>
-      </div>
 
-      <div v-if="editForm" class="card">
+      <div class="card">
         <div class="flex-layout">
           <textarea
+            :disabled="!editForm"
             class="max-width"
             type="text"
             v-model="formEditHistory"
@@ -71,7 +105,7 @@
           />
         </div>
 
-        <div class="flex-layout">
+        <div v-if="editForm" class="flex-layout pt-2">
           <button class="grow1 button negative" v-on:click="cancelEditHistory">
             cancelar
           </button>
@@ -79,9 +113,20 @@
             salvar
           </button>
         </div>
+        <div v-else class="flex-layout pt-2">
+          <button
+            class="span-button button bg-gray-200"
+            v-on:click="openEditHistory"
+          >
+            editar registro
+          </button>
+        </div>
       </div>
-      <div class="flex-layout" v-if="historyExists">
-        <button class="span-button button" v-on:click="deleteAllData">
+      <div class="flex-layout pb-6 pt-4" v-if="historyExists">
+        <button
+          class="span-button button bg-gray-200"
+          v-on:click="deleteAllData"
+        >
           apagar registro
         </button>
       </div>
@@ -92,6 +137,7 @@
 <script lang="ts">
 import chart from "./chart.vue";
 import getDays from "../misc/getDaysFromInterval.js";
+import axios from "axios";
 import type { HistoryArchive, HistoryObject } from "@/types/History.interface";
 let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 let locale = Intl.DateTimeFormat().resolvedOptions().locale;
@@ -111,9 +157,15 @@ export default {
       history: new Array() as HistoryArchive,
       editForm: false,
       formEditHistory: "",
+      currencyList: new Array() as string[],
+      formCurrencySource: "brl",
+      formCurrencyTarget: "eur",
+      currencyRate: 0,
+      currencyConverter: false,
     };
   },
   mounted() {
+    this.getCurrencyList();
     this.checkHistory();
   },
   computed: {
@@ -168,12 +220,48 @@ export default {
       };
       return data;
     },
-  },
-  watch: {},
-  methods: {
-    logIt(e: any) {
-      console.log(e);
+    converter() {
+      return (v: number): number => {
+        return this.currencyConverter
+          ? parseFloat((v * this.currencyRate).toFixed(2))
+          : v;
+      };
     },
+  },
+  watch: {
+    formCurrencySource() {
+      this.getCurrency();
+    },
+    formCurrencyTarget() {
+      this.getCurrency();
+    },
+  },
+  methods: {
+    async getCurrency() {
+      let fields = this.formCurrencySource && this.formCurrencyTarget;
+      if (!fields) return;
+      try {
+        let params = `${this.formCurrencySource}/${this.formCurrencyTarget}`;
+        let endpoint = `https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/${params}.json`;
+        let response = await axios.get(endpoint);
+        this.currencyRate = response.data[this.formCurrencyTarget];
+        console.log(response);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async getCurrencyList() {
+      try {
+        let response = await axios.get(
+          "https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies.min.json"
+        );
+        this.currencyList = Object.keys(response.data);
+        this.getCurrency();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    calculateCurrencyRate() {},
     daysSinceLastUpdate() {
       let today = Date.now();
       let lastUpdate = this.history[this.history.length - 1].timestamp;
@@ -394,15 +482,23 @@ export default {
 .wrapper {
   padding: 0 10px;
 }
+.card {
+  border-radius: 8px;
+  border: 1px solid grey;
+  padding: 10px;
+  margin: 10px 0;
+}
 .flex-layout {
   width: 100%;
   display: flex;
   gap: 16px;
   justify-content: center;
-  padding: 10px 0;
 }
 .justify-space-between {
   justify-content: space-between;
+}
+.justify-end {
+  justify-content: end;
 }
 .grow1 {
   flex-grow: 1;
@@ -415,14 +511,25 @@ export default {
 }
 .button {
   height: 30px;
+  min-width: 182px;
   padding: 0 20px;
   border-radius: 8px;
-  border: none;
   text-align: center;
   font-size: 16px;
 }
+.border-1 {
+  border-width: 1px;
+}
 .no-padding {
   padding: 0;
+}
+.no-padding-x {
+  padding-left: 0;
+  padding-right: 0;
+}
+.no-padding-y {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .positive {
   background-color: var(--primary);
@@ -432,10 +539,7 @@ export default {
   background-color: var(--negative);
   color: white;
 }
-.card {
-  border-radius: 8px;
-  border: 1px solid grey;
-  padding: 10px;
-  margin: 10px 0;
+.onDisabled:disabled {
+  background-color: #d3d3d3;
 }
 </style>

@@ -24,7 +24,6 @@ body {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
   color: #2c3e51;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -49,5 +48,11 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+input {
+  padding: 3px 6px !important;
+}
+textarea {
+  padding: 3px !important;
 }
 </style>
