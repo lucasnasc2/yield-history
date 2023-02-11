@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <div class="card">
-      <div v-if="!historyExists" class="flex-layout justify-space-between">
+      <div v-if="!historyExists" class="flex-layout justify-space-between pb-2">
         <span>Montante Bruto</span>
         <input
           class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
@@ -39,7 +39,7 @@
         </button>
       </div>
     </div>
-    <div class="card">
+    <div v-if="historyExists" class="card">
       <div class="flex-layout justify-space-between pb-2">
         <span>Moeda</span>
         <select
