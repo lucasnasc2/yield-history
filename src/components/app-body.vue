@@ -42,7 +42,7 @@
     <div v-if="historyExists" class="card">
       <div class="flex-layout justify-space-between pb-2">
         <span>Moeda</span>
-        <select 
+        <select
           class="border-solid border-1 rounded-lg border-gray-500"
           v-model="formCurrencySource"
         >
