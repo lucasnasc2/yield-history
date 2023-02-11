@@ -3,18 +3,22 @@
     <div class="card">
       <div v-if="!historyExists" class="flex-layout justify-space-between">
         <span>Montante Bruto</span>
-        <input type="number" v-model="formGrossAmount" />
+        <input
+          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+          type="number"
+          v-model="formGrossAmount"
+        />
       </div>
       <div class="flex-layout justify-space-between pb-2">
         <span>Montante Atual</span>
         <input
-          class="border-solid border-1 rounded-lg border-gray-500"
+          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
           type="number"
           v-model="formCurrentAmount"
         />
       </div>
       <div class="flex-layout justify-end max-width">
-        <button class="button positive" v-on:click="evaluateCondition">
+        <button class="button positive w-1/2" v-on:click="evaluateCondition">
           registrar
         </button>
       </div>
@@ -24,13 +28,13 @@
       <div class="flex-layout justify-space-between pb-2">
         <span>Novo depósito</span>
         <input
-          class="border-solid border-1 rounded-lg border-gray-500"
+          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
           type="number"
           v-model="formGrossAmountUpdate"
         />
       </div>
       <div class="flex-layout justify-end max-width">
-        <button class="button positive" v-on:click="addToGrossAmount">
+        <button class="button positive w-1/2" v-on:click="addToGrossAmount">
           registrar
         </button>
       </div>
@@ -63,7 +67,7 @@
       <div class="flex-layout justify-end max-width">
         <button
           :class="currencyConverter ? 'bg-gray-200' : 'positive'"
-          class="button"
+          class="button w-1/2"
           v-on:click="currencyConverter = !currencyConverter"
         >
           {{ currencyConverter ? "Original" : "Converter" }}
@@ -511,7 +515,6 @@ export default {
 }
 .button {
   height: 30px;
-  min-width: 182px;
   padding: 0 20px;
   border-radius: 8px;
   text-align: center;
