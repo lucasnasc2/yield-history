@@ -12,7 +12,7 @@
       <div class="flex-layout">
         <button
           class="span-button button positive"
-          v-on:click="this.evaluateCondition"
+          v-on:click="evaluateCondition"
         >
           registrar
         </button>
@@ -27,7 +27,7 @@
       <div class="flex-layout">
         <button
           class="span-button button positive"
-          v-on:click="this.addToGrossAmount"
+          v-on:click="addToGrossAmount"
         >
           registrar
         </button>
@@ -38,33 +38,30 @@
       <div class="card">
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante total</span>
-          <span>{{ this.history[this.history.length - 1].currentAmount }}</span>
+          <span>{{ history[history.length - 1].currentAmount }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante bruto</span>
-          <span>{{ this.history[this.history.length - 1].grossAmount }}</span>
+          <span>{{ history[history.length - 1].grossAmount }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Rendimento total</span>
-          <span>{{ this.history[this.history.length - 1].totalYield }}</span>
+          <span>{{ history[history.length - 1].totalYield }}</span>
         </div>
       </div>
       <div class="card">
-        <chart
-          :title="'Rendimento diário'"
-          :chart-data="this.historyChartData"
-        />
+        <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
       </div>
       <div class="card">
-        <chart :title="'Projeção'" :chart-data="this.projectionChartData" />
+        <chart :title="'Projeção'" :chart-data="projectionChartData" />
       </div>
-      <div class="flex-layout" v-if="!this.editForm">
-        <button class="span-button button" v-on:click="this.openEditHistory">
+      <div class="flex-layout" v-if="!editForm">
+        <button class="span-button button" v-on:click="openEditHistory">
           editar registro
         </button>
       </div>
 
-      <div v-if="this.editForm" class="card">
+      <div v-if="editForm" class="card">
         <div class="flex-layout">
           <textarea
             class="max-width"
@@ -75,22 +72,16 @@
         </div>
 
         <div class="flex-layout">
-          <button
-            class="grow1 button negative"
-            v-on:click="this.cancelEditHistory"
-          >
+          <button class="grow1 button negative" v-on:click="cancelEditHistory">
             cancelar
           </button>
-          <button
-            class="grow1 button positive"
-            v-on:click="this.saveEditHistory"
-          >
+          <button class="grow1 button positive" v-on:click="saveEditHistory">
             salvar
           </button>
         </div>
       </div>
-      <div class="flex-layout" v-if="this.historyExists">
-        <button class="span-button button" v-on:click="this.deleteAllData">
+      <div class="flex-layout" v-if="historyExists">
+        <button class="span-button button" v-on:click="deleteAllData">
           apagar registro
         </button>
       </div>
@@ -98,13 +89,14 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import chart from "./chart.vue";
 import getDays from "../misc/getDaysFromInterval.js";
+import type { HistoryArchive, HistoryObject } from "@/types/History.interface";
 let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 let locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
-const percentage = (partialValue, totalValue) => {
+const percentage = (partialValue: number, totalValue: number) => {
   return ((100 * partialValue) / totalValue).toFixed(3);
 };
 export default {
@@ -113,12 +105,12 @@ export default {
   data: function () {
     return {
       historyExists: false,
-      formGrossAmount: null,
-      formCurrentAmount: null,
-      formGrossAmountUpdate: null,
-      history: [],
+      formGrossAmount: "",
+      formCurrentAmount: "",
+      formGrossAmountUpdate: "",
+      history: new Array() as HistoryArchive,
       editForm: false,
-      formEditHistory: null,
+      formEditHistory: "",
     };
   },
   mounted() {
@@ -179,6 +171,9 @@ export default {
   },
   watch: {},
   methods: {
+    logIt(e: any) {
+      console.log(e);
+    },
     daysSinceLastUpdate() {
       let today = Date.now();
       let lastUpdate = this.history[this.history.length - 1].timestamp;
@@ -194,9 +189,9 @@ export default {
       let lastUpdateWeekday = lastUpdate.substring(0, 3);
       return todayWeekday === lastUpdateWeekday;
     },
-    filterWeekendsFromInterval(start, end) {
+    filterWeekendsFromInterval(start: number, end: number) {
       let days = getDays(start, end);
-      let daysWithoutWeekends = [];
+      let daysWithoutWeekends: Date[] = [];
       days.forEach((day) => {
         let d = day.toString();
         if (d.includes("Sun") || d.includes("Mon")) return;
@@ -206,11 +201,11 @@ export default {
     },
     invalidDay() {
       let day = new Date();
-      day = day.toString();
-      return day.includes("Sun") || day.includes("Mon");
+      let dayString = day.toString();
+      return dayString.includes("Sun") || dayString.includes("Mon");
     },
     checkHistory() {
-      if (!!localStorage.history) {
+      if (localStorage.history) {
         this.history = JSON.parse(localStorage.history);
         this.historyExists = true;
       } else {
@@ -221,23 +216,23 @@ export default {
     getSavedGrossAmount() {
       return this.history[this.history.length - 1].grossAmount;
     },
-    getDailyYield(days) {
+    getDailyYield(days: number) {
       return (
-        (this.formCurrentAmount -
+        (parseFloat(this.formCurrentAmount) -
           this.history[this.history.length - 1].currentAmount) /
         days
       );
     },
-    getArrayOfMissingData(days) {
+    getArrayOfMissingData(days: number) {
       let grossAmount = this.history[this.history.length - 1].grossAmount;
       let arrayOfMissingData = [];
       for (let i = 0; i < days; i++) {
-        let totalYield = this.formCurrentAmount - grossAmount;
+        let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
         let amountObject = {
           grossAmount: grossAmount,
-          currentAmount: this.formCurrentAmount,
-          totalYield: totalYield.toFixed(2),
-          dailyYield: this.getDailyYield(days).toFixed(2),
+          currentAmount: parseFloat(this.formCurrentAmount),
+          totalYield: parseFloat(totalYield.toFixed(2)),
+          dailyYield: parseFloat(this.getDailyYield(days).toFixed(2)),
           timestamp: Date.now(),
         };
 
@@ -264,7 +259,7 @@ export default {
     calculate() {
       let grossAmount = this.getSavedGrossAmount();
       if (
-        this.formCurrentAmount <=
+        parseFloat(this.formCurrentAmount) <=
         this.history[this.history.length - 1].currentAmount
       ) {
         alert("Montante invalido.");
@@ -272,12 +267,12 @@ export default {
       }
       let days = this.daysSinceLastUpdate();
       if (days <= 1) {
-        let totalYield = this.formCurrentAmount - grossAmount;
+        let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
         let amountObject = {
           grossAmount: grossAmount,
-          currentAmount: this.formCurrentAmount,
-          totalYield: totalYield.toFixed(2),
-          dailyYield: this.getDailyYield(1).toFixed(2),
+          currentAmount: parseFloat(this.formCurrentAmount),
+          totalYield: parseFloat(totalYield.toFixed(2)),
+          dailyYield: parseFloat(this.getDailyYield(1).toFixed(2)),
           timestamp: Date.now(),
         };
 
@@ -294,48 +289,42 @@ export default {
         alert("Formulário vazio");
         return;
       }
-      let grossAmount = this.formGrossAmount;
+      let grossAmount = parseFloat(this.formGrossAmount);
 
-      let totalYield = this.formCurrentAmount - grossAmount;
+      let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
 
       let amountObject = {
         grossAmount: grossAmount,
-        currentAmount: this.formCurrentAmount,
-        totalYield: totalYield.toFixed(2),
+        currentAmount: parseFloat(this.formCurrentAmount),
+        totalYield: parseFloat(totalYield.toFixed(2)),
         dailyYield: 0,
         timestamp: Date.now(),
       };
 
       this.saveResult(amountObject);
     },
-    saveResult(result) {
+    saveResult(result: HistoryObject) {
       this.history.push(result);
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
       if (!this.historyExists) this.historyExists = true;
     },
     addToGrossAmount() {
-      let currentAmount = parseFloat(
-        this.history[this.history.length - 1].currentAmount
-      );
-      let grossAmount = parseFloat(
-        this.history[this.history.length - 1].grossAmount
-      );
+      let currentAmount = this.history[this.history.length - 1].currentAmount;
+      let grossAmount = this.history[this.history.length - 1].grossAmount;
       let newAmount = parseFloat(this.formGrossAmountUpdate);
       if (newAmount <= 0 || !newAmount) {
         alert("Formulário vazio");
         return;
       }
-      this.history[this.history.length - 1].grossAmount = `${
-        newAmount + grossAmount
-      }`;
-      this.history[this.history.length - 1].currentAmount = `${
-        newAmount + currentAmount
-      }`;
+      this.history[this.history.length - 1].grossAmount =
+        newAmount + grossAmount;
+      this.history[this.history.length - 1].currentAmount =
+        newAmount + currentAmount;
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
     },
-    calculateProjection(months) {
+    calculateProjection(months: number) {
       let latest = this.history[this.history.length - 1];
       let initialTs = latest.timestamp;
       let date = new Date(initialTs);
@@ -349,27 +338,27 @@ export default {
       let yieldPercent = parseFloat(
         percentage(latest.dailyYield, latest.currentAmount)
       );
-      let amountArray = [];
-      let yieldArray = [];
+      let amountArray: number[] = [];
+      let yieldArray: number[] = [];
       days.forEach((day, i) => {
-        let total = i ? parseFloat(amountArray[i - 1]) : parseFloat(latest.currentAmount);
+        let total = i ? amountArray[i - 1] : latest.currentAmount;
         let currentYield = (yieldPercent / 100) * total;
         let newTotal = total + currentYield;
         amountArray.push(newTotal);
         yieldArray.push(currentYield);
       });
-      amountArray = amountArray.map((i) => i.toFixed(2));
-      yieldArray = yieldArray.map((i) => i.toFixed(2));
+      amountArray = amountArray.map((i) => parseFloat(i.toFixed(2)));
+      yieldArray = yieldArray.map((i) => parseFloat(i.toFixed(2)));
       return { yieldArray, amountArray, days };
     },
     updateHistory() {
       this.history = JSON.parse(localStorage.history);
     },
     resetForm() {
-      this.formGrossAmount = null;
-      this.formGrossAmountUpdate = null;
-      this.formCurrentAmount = null;
-      this.formEditHistory = null;
+      this.formGrossAmount = "";
+      this.formGrossAmountUpdate = "";
+      this.formCurrentAmount = "";
+      this.formEditHistory = "";
       this.editForm = false;
     },
     openEditHistory() {
@@ -384,7 +373,7 @@ export default {
       this.cancelEditHistory();
     },
     cancelEditHistory() {
-      this.formEditHistory = null;
+      this.formEditHistory = "";
       this.editForm = false;
     },
     deleteAllData() {

@@ -1,18 +1,17 @@
 <template>
   <div id="app">
     <header class="header">Registro de rendimentos</header>
-    <hello-world></hello-world>
+    <app-body />
   </div>
 </template>
 
-<script>
-import HelloWorld from "./components/HelloWorld.vue";
+<script lang="ts">
+import AppBody from "./components/app-body.vue";
 export default {
   name: "app",
   components: {
-    HelloWorld,
+    AppBody,
   },
-
 };
 </script>
 
@@ -39,5 +38,16 @@ body {
   justify-content: center;
   align-items: center;
   font-size: 1.5em;
+}
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 </style>

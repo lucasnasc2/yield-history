@@ -4,17 +4,14 @@
     :data="chartData"
     :chart-id="chartId"
     :dataset-id-key="datasetIdKey"
-    :plugins="plugins"
-    :css-classes="cssClasses"
-    :styles="styles"
     :width="width"
     :height="height"
   />
 </template>
 
-<script>
+<script lang="ts">
 import { Line as LineChartGenerator } from "vue-chartjs";
-
+import { defineComponent } from "vue";
 import {
   Chart as ChartJS,
   Title,
@@ -36,7 +33,7 @@ ChartJS.register(
   PointElement
 );
 
-export default {
+export default defineComponent({
   name: "LineChart",
   components: {
     LineChartGenerator,
@@ -65,18 +62,6 @@ export default {
     height: {
       type: Number,
       default: 300,
-    },
-    cssClasses: {
-      default: "",
-      type: String,
-    },
-    styles: {
-      type: Object,
-      default: () => {},
-    },
-    plugins: {
-      type: Array,
-      default: () => [],
     },
   },
   data() {
@@ -114,5 +99,5 @@ export default {
       },
     };
   },
-};
+});
 </script>
