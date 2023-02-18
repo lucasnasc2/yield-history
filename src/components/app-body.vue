@@ -1,5 +1,6 @@
 <template>
   <div class="wrapper">
+    <!-- entry form-->
     <div class="card">
       <div v-if="!historyExists" class="flex-layout justify-space-between pb-2">
         <span>Montante Bruto</span>
@@ -9,6 +10,7 @@
           v-model="formGrossAmount"
         />
       </div>
+
       <div class="flex-layout justify-space-between pb-2">
         <span>Montante Atual</span>
         <input
@@ -17,6 +19,7 @@
           v-model="formCurrentAmount"
         />
       </div>
+
       <div class="flex-layout justify-end max-width">
         <button class="button positive w-1/2" v-on:click="evaluateCondition">
           registrar
@@ -24,84 +27,124 @@
       </div>
     </div>
 
-    <div v-if="historyExists" class="card">
-      <div class="flex-layout justify-space-between pb-2">
-        <span>Novo depósito</span>
-        <input
-          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
-          type="number"
-          v-model="formGrossAmountUpdate"
-        />
-      </div>
-      <div class="flex-layout justify-end max-width">
-        <button class="button positive w-1/2" v-on:click="addToGrossAmount">
-          registrar
-        </button>
-      </div>
-    </div>
-    <div v-if="historyExists" class="card">
-      <div class="flex-layout justify-space-between pb-2">
-        <span>Moeda</span>
-        <select
-          class="border-solid border-1 rounded-lg border-gray-500"
-          v-model="formCurrencySource"
-        >
-          <option v-for="item in currencyList" :key="item" :value="item">
-            {{ item }}
-          </option>
-        </select>
-        <span>→</span>
-        <select
-          class="border-solid border-1 rounded-lg border-gray-500"
-          v-model="formCurrencyTarget"
-        >
-          <option v-for="item in currencyList" :key="item" :value="item">
-            {{ item }}
-          </option>
-        </select>
-      </div>
-      <div class="flex-layout justify-space-between pb-2">
-        <span>Taxa</span>
-        <span>{{ currencyRate }}</span>
-      </div>
-      <div class="flex-layout justify-end max-width">
-        <button
-          :class="currencyConverter ? 'bg-gray-200' : 'positive'"
-          class="button w-1/2"
-          v-on:click="currencyConverter = !currencyConverter"
-        >
-          {{ currencyConverter ? "Original" : "Converter" }}
-        </button>
-      </div>
-    </div>
     <div v-if="historyExists">
+      <!-- new deposit form-->
+      <div class="card">
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Novo depósito</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+            type="number"
+            v-model="formDepositAmount"
+          />
+        </div>
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Início do rendimento</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2 text-sm"
+            type="date"
+            v-model="formDepositPayoutStart"
+          />
+        </div>
+        <div class="flex-layout justify-end max-width">
+          <button class="button positive w-1/2" v-on:click="addDeposit">
+            registrar
+          </button>
+        </div>
+      </div>
+      <!-- currency card -->
+      <div v-if="currencyActive" class="card">
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Moeda</span>
+          <select
+            class="border-solid border-1 rounded-lg border-gray-500"
+            v-model="formCurrencySource"
+          >
+            <option v-for="item in currencyList" :key="item" :value="item">
+              {{ item }}
+            </option>
+          </select>
+          <span>→</span>
+          <select
+            class="border-solid border-1 rounded-lg border-gray-500"
+            v-model="formCurrencyTarget"
+          >
+            <option v-for="item in currencyList" :key="item" :value="item">
+              {{ item }}
+            </option>
+          </select>
+        </div>
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Taxa</span>
+          <span>{{ formatDate(currencyDate) }}</span>
+          <span>{{ currencyRate }}</span>
+        </div>
+        <div class="flex-layout justify-end max-width">
+          <button
+            :class="currencyConverter ? 'bg-gray-200' : 'positive'"
+            class="button w-1/2"
+            v-on:click="currencyConverter = !currencyConverter"
+          >
+            {{ currencyConverter ? "Original" : "Converter" }}
+          </button>
+        </div>
+      </div>
+      <!-- currency card placeholder -->
+      <div
+        v-if="!currencyActive"
+        class="card flex items-stretch"
+        style="height: 118px"
+      >
+        <span class="self-center text-center flex-1"
+          >Inactive<br />Try reloading the page</span
+        >
+      </div>
+      <!-- overview -->
       <div class="card">
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante total</span>
-          <span>{{
-            converter(history[history.length - 1].currentAmount)
-          }}</span>
+          <span>{{ converter(history[history.length - 1].am) }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante bruto</span>
-          <span>{{ converter(history[history.length - 1].grossAmount) }}</span>
+          <span>{{ converter(history[history.length - 1].gross) }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Rendimento total</span>
-          <span>{{ converter(history[history.length - 1].totalYield) }}</span>
+          <span>{{ converter(history[history.length - 1].ty) }}</span>
         </div>
       </div>
+      <!-- deposits -->
+      <div class="card" v-if="depositsActive">
+        <div class="mb-1">Depósitos</div>
+        <div class="p-2 rounded-lg bg-gray-200" style="max-height: 90px; overflow-y: scroll">
+          <div
+            v-for="deposit in deposits.slice().reverse()"
+            :key="deposit.ts"
+            class="flex-layout justify-space-between no-padding text-center text-sm"
+            :class="deposit.b ? 'text-gray-500' : ''"
+          >
+            <span>{{ currencySymbol() + converter(deposit.am) }}</span>
+            <span
+              >{{ deposit.b ? "Passou a render em " : "Renderá em "
+              }}{{ formatDate(deposit.s) }}</span
+            >
+          </div>
+        </div>
+      </div>
+      <!-- history chart -->
       <div class="card">
         <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
       </div>
+      <!-- projection chart -->
       <div class="card">
         <chart :title="'Projeção'" :chart-data="projectionChartData" />
       </div>
-
+      <!-- history editor -->
       <div class="card">
         <div class="flex-layout">
           <textarea
-            :disabled="!editForm"
+            :disabled="!editHistoryForm"
             class="max-width"
             type="text"
             v-model="formEditHistory"
@@ -109,7 +152,7 @@
           />
         </div>
 
-        <div v-if="editForm" class="flex-layout pt-2">
+        <div v-if="editHistoryForm" class="flex-layout pt-2">
           <button class="grow1 button negative" v-on:click="cancelEditHistory">
             cancelar
           </button>
@@ -126,7 +169,37 @@
           </button>
         </div>
       </div>
-      <div class="flex-layout pb-6 pt-4" v-if="historyExists">
+      <!-- deposit editor -->
+      <div class="card" v-if="deposits.length">
+        <div class="flex-layout">
+          <textarea
+            :disabled="!editDepositsForm"
+            class="max-width"
+            type="text"
+            v-model="formEditDeposits"
+            rows="10"
+          />
+        </div>
+
+        <div v-if="editDepositsForm" class="flex-layout pt-2">
+          <button class="grow1 button negative" v-on:click="cancelEditDeposits">
+            cancelar
+          </button>
+          <button class="grow1 button positive" v-on:click="saveEditDeposits">
+            salvar
+          </button>
+        </div>
+        <div v-else class="flex-layout pt-2">
+          <button
+            class="span-button button bg-gray-200"
+            v-on:click="openEditDeposits"
+          >
+            editar registro
+          </button>
+        </div>
+      </div>
+      <!-- delete data -->
+      <div class="flex-layout pb-6 pt-4">
         <button
           class="span-button button bg-gray-200"
           v-on:click="deleteAllData"
@@ -142,30 +215,49 @@
 import chart from "./chart.vue";
 import getDays from "../misc/getDaysFromInterval.js";
 import axios from "axios";
-import type { HistoryArchive, HistoryObject } from "@/types/History.interface";
+import type {
+  HistoryArchive,
+  HistoryObject,
+  DepositArchive,
+  DepositObject,
+} from "@/types/History.interface";
+
+//globals
+/** get current utc timestamp */
+let tsNow = () => Date.now;
+/** browser timezone */
 let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** browser locale code */
 let locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
+/** return partialValue is what percentage of totalValue */
 const percentage = (partialValue: number, totalValue: number) => {
   return ((100 * partialValue) / totalValue).toFixed(3);
 };
+
+//vue instance
 export default {
   name: "HelloWorld",
   components: { chart },
   data: function () {
     return {
+      history: new Array() as HistoryArchive,
+      deposits: new Array() as DepositArchive,
+      currencyList: new Array() as string[],
+      currencyRate: 0,
+      currencyDate: "",
       historyExists: false,
+      currencyConverter: false,
+      editHistoryForm: false,
+      editDepositsForm: false,
       formGrossAmount: "",
       formCurrentAmount: "",
-      formGrossAmountUpdate: "",
-      history: new Array() as HistoryArchive,
-      editForm: false,
+      formDepositAmount: "",
+      formDepositPayoutStart: "",
       formEditHistory: "",
-      currencyList: new Array() as string[],
+      formEditDeposits: "",
       formCurrencySource: "brl",
       formCurrencyTarget: "eur",
-      currencyRate: 0,
-      currencyConverter: false,
     };
   },
   mounted() {
@@ -173,22 +265,43 @@ export default {
     this.checkHistory();
   },
   computed: {
-    historyChartData() {
-      let dailyYieldArray = this.history.map((a) => a.dailyYield);
-      let percentageDailyYieldArray = this.history.map((a) =>
-        percentage(a.dailyYield, a.currentAmount)
-      );
-      let labelArray = this.history.map((a) => {
-        let date = new Date(a.timestamp);
+    currencyActive() {
+      return !!this.currencyList.length;
+    },
+    depositsActive() {
+      return !!this.deposits.length;
+    },
+    currencySymbol() {
+      return () => {
+        if (this.currencyConverter) {
+          if (this.formCurrencyTarget == "eur") {
+            return "€";
+          } else if (this.formCurrencyTarget == "usd") {
+            return "$";
+          } else return this.formCurrencyTarget;
+        } else return "R$";
+      };
+    },
+    formatDate() {
+      return (d: string | number) => {
+        if (!d) return "";
+        let date = new Date(d);
         return date.toLocaleDateString(locale, {
           timeZone: tz,
         });
-      });
+      };
+    },
+    historyChartData() {
+      let dailyYieldArray = this.history.map((a) => this.converter(a.dy));
+      let percentageDailyYieldArray = this.history.map((a) =>
+        percentage(a.dy, a.am)
+      );
+      let labelArray = this.history.map((a) => this.formatDate(a.ts));
       let data = {
         labels: labelArray,
         datasets: [
           {
-            label: "R$",
+            label: this.currencySymbol(),
             backgroundColor: "#ba4de3",
             data: dailyYieldArray,
             yAxisID: "y",
@@ -204,18 +317,20 @@ export default {
       return data;
     },
     projectionChartData() {
-      const { days, yieldArray, amountArray } = this.calculateProjection(12);
+      let { days, yieldArray, amountArray } = this.calculateProjection(12);
+      yieldArray = yieldArray.map((a) => this.converter(a, 3));
+      amountArray = amountArray.map((a) => this.converter(a));
       let data = {
         labels: days,
         datasets: [
           {
-            label: "Total R$",
+            label: `Total ${this.currencySymbol()}`,
             backgroundColor: "#ba4de3",
             data: amountArray,
             yAxisID: "y",
           },
           {
-            label: "Diário R$",
+            label: `Diário ${this.currencySymbol()}`,
             backgroundColor: "#530082",
             data: yieldArray,
             yAxisID: "y1",
@@ -225,9 +340,9 @@ export default {
       return data;
     },
     converter() {
-      return (v: number): number => {
+      return (v: number, d = 2): number => {
         return this.currencyConverter
-          ? parseFloat((v * this.currencyRate).toFixed(2))
+          ? parseFloat((v * this.currencyRate).toFixed(d))
           : v;
       };
     },
@@ -249,6 +364,7 @@ export default {
         let endpoint = `https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/${params}.json`;
         let response = await axios.get(endpoint);
         this.currencyRate = response.data[this.formCurrencyTarget];
+        this.currencyDate = response.data.date;
         console.log(response);
       } catch (error) {
         console.log(error);
@@ -265,17 +381,16 @@ export default {
         console.log(error);
       }
     },
-    calculateCurrencyRate() {},
     daysSinceLastUpdate() {
       let today = Date.now();
-      let lastUpdate = this.history[this.history.length - 1].timestamp;
+      let lastUpdate = this.history[this.history.length - 1].ts;
       let filteredArray = this.filterWeekendsFromInterval(lastUpdate, today);
       return filteredArray.length - 1;
     },
     checkStillSameDay() {
       let today = new Date().toString();
       let lastUpdate = new Date(
-        this.history[this.history.length - 1].timestamp
+        this.history[this.history.length - 1].ts
       ).toString();
       let todayWeekday = today.substring(0, 3);
       let lastUpdateWeekday = lastUpdate.substring(0, 3);
@@ -297,35 +412,44 @@ export default {
       return dayString.includes("Sun") || dayString.includes("Mon");
     },
     checkHistory() {
-      if (localStorage.history) {
-        this.history = JSON.parse(localStorage.history);
+      let historyString: string = localStorage.history;
+      if (historyString) {
+        this.fillData(historyString);
         this.historyExists = true;
       } else {
         this.history = [];
         this.historyExists = false;
       }
     },
+    fillData(historyString: string) {
+      this.history = JSON.parse(historyString);
+      let depositsString: string = localStorage.deposits;
+      if (depositsString) {
+        this.deposits = JSON.parse(depositsString);
+        this.checkDeposits();
+      }
+    },
     getSavedGrossAmount() {
-      return this.history[this.history.length - 1].grossAmount;
+      return this.history[this.history.length - 1].gross;
     },
     getDailyYield(days: number) {
       return (
         (parseFloat(this.formCurrentAmount) -
-          this.history[this.history.length - 1].currentAmount) /
+          this.history[this.history.length - 1].am) /
         days
       );
     },
     getArrayOfMissingData(days: number) {
-      let grossAmount = this.history[this.history.length - 1].grossAmount;
+      let grossAmount = this.history[this.history.length - 1].gross;
       let arrayOfMissingData = [];
       for (let i = 0; i < days; i++) {
         let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
-        let amountObject = {
-          grossAmount: grossAmount,
-          currentAmount: parseFloat(this.formCurrentAmount),
-          totalYield: parseFloat(totalYield.toFixed(2)),
-          dailyYield: parseFloat(this.getDailyYield(days).toFixed(2)),
-          timestamp: Date.now(),
+        let amountObject: HistoryObject = {
+          gross: grossAmount,
+          am: parseFloat(this.formCurrentAmount),
+          ty: parseFloat(totalYield.toFixed(2)),
+          dy: parseFloat(this.getDailyYield(days).toFixed(2)),
+          ts: Date.now(),
         };
 
         arrayOfMissingData.push(amountObject);
@@ -352,7 +476,7 @@ export default {
       let grossAmount = this.getSavedGrossAmount();
       if (
         parseFloat(this.formCurrentAmount) <=
-        this.history[this.history.length - 1].currentAmount
+        this.history[this.history.length - 1].am
       ) {
         alert("Montante invalido.");
         return;
@@ -360,12 +484,12 @@ export default {
       let days = this.daysSinceLastUpdate();
       if (days <= 1) {
         let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
-        let amountObject = {
-          grossAmount: grossAmount,
-          currentAmount: parseFloat(this.formCurrentAmount),
-          totalYield: parseFloat(totalYield.toFixed(2)),
-          dailyYield: parseFloat(this.getDailyYield(1).toFixed(2)),
-          timestamp: Date.now(),
+        let amountObject: HistoryObject = {
+          gross: grossAmount,
+          am: parseFloat(this.formCurrentAmount),
+          ty: parseFloat(totalYield.toFixed(2)),
+          dy: parseFloat(this.getDailyYield(1).toFixed(2)),
+          ts: Date.now(),
         };
 
         this.saveResult(amountObject);
@@ -385,12 +509,12 @@ export default {
 
       let totalYield = parseFloat(this.formCurrentAmount) - grossAmount;
 
-      let amountObject = {
-        grossAmount: grossAmount,
-        currentAmount: parseFloat(this.formCurrentAmount),
-        totalYield: parseFloat(totalYield.toFixed(2)),
-        dailyYield: 0,
-        timestamp: Date.now(),
+      let amountObject: HistoryObject = {
+        gross: grossAmount,
+        am: parseFloat(this.formCurrentAmount),
+        ty: parseFloat(totalYield.toFixed(2)),
+        dy: 0,
+        ts: Date.now(),
       };
 
       this.saveResult(amountObject);
@@ -401,24 +525,44 @@ export default {
       this.resetForm();
       if (!this.historyExists) this.historyExists = true;
     },
-    addToGrossAmount() {
-      let currentAmount = this.history[this.history.length - 1].currentAmount;
-      let grossAmount = this.history[this.history.length - 1].grossAmount;
-      let newAmount = parseFloat(this.formGrossAmountUpdate);
-      if (newAmount <= 0 || !newAmount) {
+    addDeposit() {
+      if (!this.formDepositAmount || !this.formDepositPayoutStart) {
         alert("Formulário vazio");
         return;
       }
-      this.history[this.history.length - 1].grossAmount =
-        newAmount + grossAmount;
-      this.history[this.history.length - 1].currentAmount =
-        newAmount + currentAmount;
+      let am = parseFloat(this.formDepositAmount);
+      let s = Date.parse(this.formDepositPayoutStart);
+      console.log(am, s);
+      let deposit: DepositObject = {
+        am,
+        s,
+        ts: Date.now(),
+        b: false,
+      };
+      this.deposits.push(deposit);
+      localStorage.setItem("deposits", JSON.stringify(this.deposits));
+    },
+    checkDeposits() {
+      this.deposits.forEach((deposit) => {
+        let now = Date.now();
+        if (now >= deposit.s && !deposit.b) {
+          this.addToGrossAmount(deposit.am);
+          deposit.b = true;
+        }
+      });
+      localStorage.setItem("deposits", JSON.stringify(this.deposits));
+    },
+    addToGrossAmount(deposit: number) {
+      let currentAmount = this.history[this.history.length - 1].am;
+      let grossAmount = this.history[this.history.length - 1].gross;
+      this.history[this.history.length - 1].gross = deposit + grossAmount;
+      this.history[this.history.length - 1].am = deposit + currentAmount;
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
     },
     calculateProjection(months: number) {
       let latest = this.history[this.history.length - 1];
-      let initialTs = latest.timestamp;
+      let initialTs = latest.ts;
       let date = new Date(initialTs);
       let futureTs = date.setMonth(date.getMonth() + months).valueOf();
       let days = this.filterWeekendsFromInterval(initialTs, futureTs).map(
@@ -427,35 +571,34 @@ export default {
             timeZone: tz,
           })
       );
-      let yieldPercent = parseFloat(
-        percentage(latest.dailyYield, latest.currentAmount)
-      );
+      let yieldPercent = parseFloat(percentage(latest.dy, latest.am));
       let amountArray: number[] = [];
       let yieldArray: number[] = [];
       days.forEach((day, i) => {
-        let total = i ? amountArray[i - 1] : latest.currentAmount;
+        let total = i ? amountArray[i - 1] : latest.am;
         let currentYield = (yieldPercent / 100) * total;
         let newTotal = total + currentYield;
         amountArray.push(newTotal);
         yieldArray.push(currentYield);
       });
-      amountArray = amountArray.map((i) => parseFloat(i.toFixed(2)));
-      yieldArray = yieldArray.map((i) => parseFloat(i.toFixed(2)));
       return { yieldArray, amountArray, days };
     },
     updateHistory() {
       this.history = JSON.parse(localStorage.history);
     },
+    updateDeposits() {
+      this.deposits = JSON.parse(localStorage.deposits);
+    },
     resetForm() {
       this.formGrossAmount = "";
-      this.formGrossAmountUpdate = "";
+      this.formDepositAmount = "";
       this.formCurrentAmount = "";
       this.formEditHistory = "";
-      this.editForm = false;
+      this.editHistoryForm = false;
     },
     openEditHistory() {
       this.formEditHistory = localStorage.history;
-      this.editForm = true;
+      this.editHistoryForm = true;
     },
     saveEditHistory() {
       if (!(this.formEditHistory === localStorage.history)) {
@@ -466,7 +609,22 @@ export default {
     },
     cancelEditHistory() {
       this.formEditHistory = "";
-      this.editForm = false;
+      this.editHistoryForm = false;
+    },
+    openEditDeposits() {
+      this.formEditDeposits = localStorage.deposits;
+      this.editDepositsForm = true;
+    },
+    saveEditDeposits() {
+      if (!(this.formEditDeposits === localStorage.deposits)) {
+        localStorage.setItem("deposits", this.formEditDeposits);
+      }
+      this.updateDeposits();
+      this.cancelEditDeposits();
+    },
+    cancelEditDeposits() {
+      this.formEditDeposits = "";
+      this.editDepositsForm = false;
     },
     deleteAllData() {
       if (
@@ -525,14 +683,6 @@ export default {
 }
 .no-padding {
   padding: 0;
-}
-.no-padding-x {
-  padding-left: 0;
-  padding-right: 0;
-}
-.no-padding-y {
-  padding-top: 0;
-  padding-bottom: 0;
 }
 .positive {
   background-color: var(--primary);
