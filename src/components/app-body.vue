@@ -117,16 +117,19 @@
       <!-- deposits -->
       <div class="card" v-if="depositsActive">
         <div class="mb-1">Depósitos</div>
-        <div class="p-2 rounded-lg bg-gray-200" style="max-height: 90px; overflow-y: scroll">
+        <div
+          class="p-2 rounded-lg bg-gray-200"
+          style="max-height: 90px; overflow-y: scroll"
+        >
           <div
             v-for="deposit in deposits.slice().reverse()"
             :key="deposit.ts"
             class="flex-layout justify-space-between no-padding text-center text-sm"
-            :class="deposit.b ? 'text-gray-500' : ''"
+            :class="deposit.s <= tsNow() ? 'text-gray-500' : ''"
           >
             <span>{{ currencySymbol() + converter(deposit.am) }}</span>
             <span
-              >{{ deposit.b ? "Passou a render em " : "Renderá em "
+              >{{ deposit.s <= tsNow() ? "Passou a render em " : "Renderá em "
               }}{{ formatDate(deposit.s) }}</span
             >
           </div>
@@ -223,13 +226,10 @@ import type {
 } from "@/types/History.interface";
 
 //globals
-/** get current utc timestamp */
-let tsNow = () => Date.now;
 /** browser timezone */
 let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** browser locale code */
 let locale = Intl.DateTimeFormat().resolvedOptions().locale;
-
 /** return partialValue is what percentage of totalValue */
 const percentage = (partialValue: number, totalValue: number) => {
   return ((100 * partialValue) / totalValue).toFixed(3);
@@ -282,6 +282,9 @@ export default {
         } else return "R$";
       };
     },
+    tsNow() {
+      return () => Date.now();
+    },
     formatDate() {
       return (d: string | number) => {
         if (!d) return "";
@@ -291,11 +294,52 @@ export default {
         });
       };
     },
+    offsetDeposits() {
+      return (amount: number, ts: number): number => {
+        let dayIntersects = (
+          dateFrom: string | number,
+          dateTo: string | number,
+          dateCheck: string | number
+        ) => {
+          let from = parseInt(
+            new Date(dateFrom)
+              .toISOString()
+              .split("T", 1)[0]
+              .split("-")
+              .join("")
+          );
+          let to = parseInt(
+            new Date(dateTo).toISOString().split("T", 1)[0].split("-").join("")
+          );
+          let check = parseInt(
+            new Date(dateCheck)
+              .toISOString()
+              .split("T", 1)[0]
+              .split("-")
+              .join("")
+          );
+          return check >= from && check <= to;
+        };
+        let offset = 0;
+        // eslint-disable-next-line no-extra-boolean-cast
+        if (!!this.deposits.length) {
+          this.deposits.forEach((deposit) => {
+            if (dayIntersects(deposit.ts, deposit.s, ts)) {
+              offset = offset + deposit.am;
+            }
+          });
+          return Math.abs(amount - offset);
+        } else return amount;
+      };
+    },
     historyChartData() {
       let dailyYieldArray = this.history.map((a) => this.converter(a.dy));
-      let percentageDailyYieldArray = this.history.map((a) =>
-        percentage(a.dy, a.am)
-      );
+      let percentageDailyYieldArray: string[] = [];
+      this.history.forEach((a) => {
+        percentageDailyYieldArray.push(
+          percentage(a.dy, this.offsetDeposits(a.am, a.ts))
+        );
+      });
       let labelArray = this.history.map((a) => this.formatDate(a.ts));
       let data = {
         labels: labelArray,
@@ -426,7 +470,6 @@ export default {
       let depositsString: string = localStorage.deposits;
       if (depositsString) {
         this.deposits = JSON.parse(depositsString);
-        this.checkDeposits();
       }
     },
     getSavedGrossAmount() {
@@ -541,16 +584,8 @@ export default {
       };
       this.deposits.push(deposit);
       localStorage.setItem("deposits", JSON.stringify(this.deposits));
-    },
-    checkDeposits() {
-      this.deposits.forEach((deposit) => {
-        let now = Date.now();
-        if (now >= deposit.s && !deposit.b) {
-          this.addToGrossAmount(deposit.am);
-          deposit.b = true;
-        }
-      });
-      localStorage.setItem("deposits", JSON.stringify(this.deposits));
+      this.addToGrossAmount(deposit.am);
+      this.resetForm();
     },
     addToGrossAmount(deposit: number) {
       let currentAmount = this.history[this.history.length - 1].am;
@@ -558,7 +593,6 @@ export default {
       this.history[this.history.length - 1].gross = deposit + grossAmount;
       this.history[this.history.length - 1].am = deposit + currentAmount;
       localStorage.setItem("history", JSON.stringify(this.history));
-      this.resetForm();
     },
     calculateProjection(months: number) {
       let latest = this.history[this.history.length - 1];
@@ -571,7 +605,9 @@ export default {
             timeZone: tz,
           })
       );
-      let yieldPercent = parseFloat(percentage(latest.dy, latest.am));
+      let yieldPercent = parseFloat(
+        percentage(latest.dy, this.offsetDeposits(latest.am, latest.ts))
+      );
       let amountArray: number[] = [];
       let yieldArray: number[] = [];
       days.forEach((day, i) => {
@@ -593,6 +629,7 @@ export default {
       this.formGrossAmount = "";
       this.formDepositAmount = "";
       this.formCurrentAmount = "";
+      this.formDepositPayoutStart = "";
       this.formEditHistory = "";
       this.editHistoryForm = false;
     },
