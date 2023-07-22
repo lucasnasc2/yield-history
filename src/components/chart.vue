@@ -22,11 +22,13 @@ import {
   CategoryScale,
   PointElement,
 } from "chart.js";
+import zoomPlugin from "chartjs-plugin-zoom";
 
 ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  zoomPlugin,
   LineElement,
   LinearScale,
   CategoryScale,
@@ -77,6 +79,20 @@ export default defineComponent({
           title: {
             display: true,
             text: this.title,
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'xy',
+            }
           },
         },
         scales: {
