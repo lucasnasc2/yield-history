@@ -22,13 +22,11 @@ import {
   CategoryScale,
   PointElement,
 } from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
 
 ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  zoomPlugin,
   LineElement,
   LinearScale,
   CategoryScale,
@@ -66,54 +64,42 @@ export default defineComponent({
       default: 300,
     },
   },
-  data() {
-    return {
-      chartOptions: {
-        responsive: true,
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
-        stacked: false,
-        plugins: {
-          title: {
-            display: true,
-            text: this.title,
+  computed: {
+    chartOptions() {
+      return {
+        chartOptions: {
+          responsive: true,
+          interaction: {
+            mode: "index",
+            intersect: false,
           },
-          zoom: {
-            pan: {
-              enabled: true,
+          stacked: false,
+          plugins: {
+            title: {
+              display: true,
+              text: this.title,
             },
-            zoom: {
-              wheel: {
-                enabled: true,
-              },
-              pinch: {
-                enabled: true
-              },
-              mode: 'xy',
-            }
           },
-        },
-        scales: {
-          y: {
-            type: "linear",
-            display: true,
-            position: "left",
-          },
-          y1: {
-            type: "linear",
-            display: true,
-            position: "right",
+          scales: {
+            y: {
+              type: "linear",
+              display: true,
+              position: "left",
+            },
+            y1: {
+              type: "linear",
+              display: true,
+              position: "right",
 
-            // grid line settings
-            grid: {
-              drawOnChartArea: false, // only want the grid lines for one axis to show up
+              // grid line settings
+              grid: {
+                drawOnChartArea: false, // only want the grid lines for one axis to show up
+              },
             },
           },
         },
-      },
-    };
+      };
+    },
   },
 });
 </script>

@@ -138,6 +138,10 @@
       <!-- history chart -->
       <div class="card">
         <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
+          <range-slider
+            :data-array="history"
+            @changed="updateGraph"
+          ></range-slider>
       </div>
       <!-- projection chart -->
       <div class="card">
@@ -216,6 +220,7 @@
 
 <script lang="ts">
 import chart from "./chart.vue";
+import rangeSlider from "./slider-range.vue";
 import getDays from "../misc/getDaysFromInterval.js";
 import axios from "axios";
 import type {
@@ -238,7 +243,7 @@ const percentage = (partialValue: number, totalValue: number) => {
 //vue instance
 export default {
   name: "HelloWorld",
-  components: { chart },
+  components: { chart, rangeSlider },
   data: function () {
     return {
       history: new Array() as HistoryArchive,
@@ -258,6 +263,7 @@ export default {
       formEditDeposits: "",
       formCurrencySource: "brl",
       formCurrencyTarget: "eur",
+      graphFilterRange: new Array() as number[],
     };
   },
   mounted() {
@@ -333,14 +339,9 @@ export default {
       };
     },
     historyChartData() {
-      let dailyYieldArray = this.history.map((a) => this.converter(a.dy));
-      let percentageDailyYieldArray: string[] = [];
-      this.history.forEach((a) => {
-        percentageDailyYieldArray.push(
-          percentage(a.dy, this.offsetDeposits(a.am, a.ts))
-        );
-      });
-      let labelArray = this.history.map((a) => this.formatDate(a.ts));
+      let { labelArray, percentageDailyYieldArray, dailyYieldArray } =
+        this.getChartHistoryData();
+
       let data = {
         labels: labelArray,
         datasets: [
@@ -400,6 +401,24 @@ export default {
     },
   },
   methods: {
+    updateGraph(arr: []) {
+      this.graphFilterRange = arr;
+    },
+    getChartHistoryData() {
+      let dailyYieldArray: number[] = [];
+      let percentageDailyYieldArray: string[] = [];
+      let labelArray: string[] = [];
+      this.history.forEach((a, i) => {
+        if (i >= this.graphFilterRange[0] && i <= this.graphFilterRange[1]) {
+          percentageDailyYieldArray.push(
+            percentage(a.dy, this.offsetDeposits(a.am, a.ts))
+          );
+          dailyYieldArray.push(this.converter(a.dy));
+          labelArray.push(this.formatDate(a.ts));
+        }
+      });
+      return { labelArray, percentageDailyYieldArray, dailyYieldArray };
+    },
     async getCurrency() {
       let fields = this.formCurrencySource && this.formCurrencyTarget;
       if (!fields) return;
@@ -467,6 +486,7 @@ export default {
     },
     fillData(historyString: string) {
       this.history = JSON.parse(historyString);
+      this.graphFilterRange = [0, this.history.length - 1];
       let depositsString: string = localStorage.deposits;
       if (depositsString) {
         this.deposits = JSON.parse(depositsString);
@@ -678,6 +698,12 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+input {
+  padding: 3px 6px !important;
+}
+textarea {
+  padding: 3px !important;
+}
 .wrapper {
   padding: 0 10px;
 }
