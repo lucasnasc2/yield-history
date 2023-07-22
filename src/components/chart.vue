@@ -64,42 +64,40 @@ export default defineComponent({
       default: 300,
     },
   },
-  computed: {
-    chartOptions() {
-      return {
-        chartOptions: {
-          responsive: true,
-          interaction: {
-            mode: "index",
-            intersect: false,
+  data() {
+    return {
+      chartOptions: {
+        responsive: true,
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        stacked: false,
+        plugins: {
+          title: {
+            display: true,
+            text: this.title,
           },
-          stacked: false,
-          plugins: {
-            title: {
-              display: true,
-              text: this.title,
-            },
+        },
+        scales: {
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
           },
-          scales: {
-            y: {
-              type: "linear",
-              display: true,
-              position: "left",
-            },
-            y1: {
-              type: "linear",
-              display: true,
-              position: "right",
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
 
-              // grid line settings
-              grid: {
-                drawOnChartArea: false, // only want the grid lines for one axis to show up
-              },
+            // grid line settings
+            grid: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
             },
           },
         },
-      };
-    },
+      },
+    };
   },
 });
 </script>
