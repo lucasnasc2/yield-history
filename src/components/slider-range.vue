@@ -31,7 +31,7 @@ export default defineComponent({
   },
   data: function () {
     return {
-      fromSlider: 0,
+      fromSlider: this.dataArray.length > 23 ? this.dataArray.length - 23 : 0,
       toSlider: this.dataArray.length - 1,
     };
   },

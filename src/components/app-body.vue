@@ -136,12 +136,17 @@
         </div>
       </div>
       <!-- history chart -->
-      <div class="card">
-        <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
+      <div class="card no-padding">
+        <div class="container">
+          <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
+        </div>
+        <hr style="margin-top: 0.7em;" />
+        <div class="container" style="padding-bottom: 1em;">
           <range-slider
             :data-array="history"
             @changed="updateGraph"
           ></range-slider>
+        </div>
       </div>
       <!-- projection chart -->
       <div class="card">
@@ -486,7 +491,10 @@ export default {
     },
     fillData(historyString: string) {
       this.history = JSON.parse(historyString);
-      this.graphFilterRange = [0, this.history.length - 1];
+      this.graphFilterRange = [
+        this.history.length > 23 ? this.history.length - 23 : 0,
+        this.history.length - 1,
+      ];
       let depositsString: string = localStorage.deposits;
       if (depositsString) {
         this.deposits = JSON.parse(depositsString);
@@ -712,6 +720,9 @@ textarea {
   border: 1px solid grey;
   padding: 10px;
   margin: 10px 0;
+}
+.container {
+  padding: 10px;
 }
 .flex-layout {
   width: 100%;
