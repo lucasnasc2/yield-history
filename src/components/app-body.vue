@@ -103,15 +103,36 @@
       <div class="card">
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante total</span>
-          <span>{{ converter(history[history.length - 1].am) }}</span>
+          <span
+            >{{ currencySymbol() }}
+            {{ converter(history[history.length - 1].am) }}</span
+          >
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Montante bruto</span>
-          <span>{{ converter(history[history.length - 1].gross) }}</span>
+          <span
+            >{{ currencySymbol() }}
+            {{ converter(history[history.length - 1].gross) }}</span
+          >
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Rendimento total</span>
-          <span>{{ converter(history[history.length - 1].ty) }}</span>
+          <span
+            >{{ currencySymbol() }}
+            {{ converter(history[history.length - 1].ty) }}</span
+          >
+        </div>
+        <div class="flex-layout justify-space-between no-padding">
+          <span>Rendimento do mês</span>
+          <span>{{ currencySymbol() }} {{ converter(monthlyYield) }}</span>
+        </div>
+        <div class="flex-layout justify-space-between no-padding">
+          <span>Taxa média de juros diário (mês)</span>
+          <span>{{ averageDayRate }}%</span>
+        </div>
+        <div class="flex-layout justify-space-between no-padding">
+          <span>Taxa acumulada de juros (mês)</span>
+          <span>{{ monthlyRate }}% (x12 = {{ (monthlyRate * 12).toFixed(3) }}%)</span>
         </div>
       </div>
       <!-- deposits -->
@@ -243,7 +264,7 @@ let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 let locale = Intl.DateTimeFormat().resolvedOptions().locale;
 /** return partialValue is what percentage of totalValue */
 const percentage = (partialValue: number, totalValue: number) => {
-  return ((100 * partialValue) / totalValue).toFixed(3);
+  return Number(((100 * partialValue) / totalValue).toFixed(3));
 };
 
 //vue instance
@@ -293,6 +314,50 @@ export default {
           } else return this.formCurrencyTarget;
         } else return "R$";
       };
+    },
+    converter() {
+      return (v: number, d = 2): number => {
+        return this.currencyConverter
+          ? parseFloat((v * this.currencyRate).toFixed(d))
+          : v;
+      };
+    },
+    monthlyYield() {
+      const tsIsCurrentMonth = (ts: string | number) => {
+        let checkDate = new Date(ts);
+        let currentDate = new Date();
+        let checkMonth = checkDate.getMonth();
+        let currentMonth = currentDate.getMonth();
+        return checkMonth == currentMonth;
+      };
+      return this.history.reduce(
+        (partialSum, r) => (tsIsCurrentMonth(r.ts) ? partialSum + r.dy : 0),
+        0
+      );
+    },
+    averageDayRate() {
+      let averages: number[] = [];
+      this.history.forEach((h, i, arr) => {
+        if (i >= arr.length - 23) {
+          averages.push(percentage(h.dy, h.am));
+        }
+      });
+      return Number(
+        (
+          averages.reduce((prev, current) => prev + current) / averages.length
+        ).toFixed(3)
+      );
+    },
+    monthlyRate() {
+      let averages: number[] = [];
+      this.history.forEach((h, i, arr) => {
+        if (i >= arr.length - 23) {
+          averages.push(percentage(h.dy, h.am));
+        }
+      });
+      return Number(
+        averages.reduce((prev, current) => prev + current).toFixed(3)
+      );
     },
     tsNow() {
       return () => Date.now();
@@ -390,13 +455,6 @@ export default {
       };
       return data;
     },
-    converter() {
-      return (v: number, d = 2): number => {
-        return this.currencyConverter
-          ? parseFloat((v * this.currencyRate).toFixed(d))
-          : v;
-      };
-    },
   },
   watch: {
     formCurrencySource() {
@@ -417,7 +475,7 @@ export default {
       this.history.forEach((a, i) => {
         if (i >= this.graphFilterRange[0] && i <= this.graphFilterRange[1]) {
           percentageDailyYieldArray.push(
-            percentage(a.dy, this.offsetDeposits(a.am, a.ts))
+            percentage(a.dy, this.offsetDeposits(a.am, a.ts)).toString()
           );
           dailyYieldArray.push(this.converter(a.dy));
           labelArray.push(this.formatDate(a.ts));
