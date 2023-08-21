@@ -22,7 +22,7 @@
 <script>
 import { defineComponent } from "vue";
 export default defineComponent({
-  name: "LineChart",
+  name: "rangeSlider",
   props: {
     dataArray: {
       type: Array,
@@ -35,32 +35,15 @@ export default defineComponent({
       toSlider: this.dataArray.length - 1,
     };
   },
-  mounted() {
-    function controlFromSlider(fromSlider, toSlider) {
-      const [from, to] = getParsed(fromSlider, toSlider);
-      fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
-      if (from > to) {
-        fromSlider.value = to;
-      }
-    }
-
-    function controlToSlider(fromSlider, toSlider) {
-      const [from, to] = getParsed(fromSlider, toSlider);
-      fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
-      setToggleAccessible(toSlider);
-      if (from <= to) {
-        toSlider.value = to;
-      } else {
-        toSlider.value = from;
-      }
-    }
-
-    function getParsed(currentFrom, currentTo) {
-      const from = parseInt(currentFrom.value, 10);
-      const to = parseInt(currentTo.value, 10);
-      return [from, to];
-    }
-    function fillSlider(from, to, sliderColor, rangeColor, controlSlider) {
+  methods: {
+    updateSlider(from, to) {
+      this.fromSlider = from;
+      this.toSlider = to;
+      const fromSlider = document.querySelector("#fromSlider");
+      const toSlider = document.querySelector("#toSlider");
+      this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
+    },
+    fillSlider(from, to, sliderColor, rangeColor, controlSlider) {
       const rangeDistance = to.max - to.min;
       const fromPosition = from.value - to.min;
       const toPosition = to.value - to.min;
@@ -72,23 +55,45 @@ export default defineComponent({
       ${rangeColor} ${(toPosition / rangeDistance) * 100}%, 
       ${sliderColor} ${(toPosition / rangeDistance) * 100}%, 
       ${sliderColor} 100%)`;
-    }
-
-    function setToggleAccessible(currentTarget) {
+    },
+    controlFromSlider(fromSlider, toSlider) {
+      const [from, to] = this.getParsed(fromSlider, toSlider);
+      this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
+      if (from > to) {
+        fromSlider.value = to;
+      }
+    },
+    controlToSlider(fromSlider, toSlider) {
+      const [from, to] = this.getParsed(fromSlider, toSlider);
+      this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
+      this.setToggleAccessible(toSlider);
+      if (from <= to) {
+        toSlider.value = to;
+      } else {
+        toSlider.value = from;
+      }
+    },
+    getParsed(currentFrom, currentTo) {
+      const from = parseInt(currentFrom.value, 10);
+      const to = parseInt(currentTo.value, 10);
+      return [from, to];
+    },
+    setToggleAccessible(currentTarget) {
       const toSlider = document.querySelector("#toSlider");
       if (Number(currentTarget.value) <= 0) {
         toSlider.style.zIndex = 2;
       } else {
         toSlider.style.zIndex = 0;
       }
-    }
+    },
+  },
+  mounted() {
     const fromSlider = document.querySelector("#fromSlider");
     const toSlider = document.querySelector("#toSlider");
-    fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
-    setToggleAccessible(toSlider);
-    fromSlider.oninput = () =>
-      controlFromSlider(fromSlider, toSlider);
-    toSlider.oninput = () => controlToSlider(fromSlider, toSlider);
+    this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
+    this.setToggleAccessible(toSlider);
+    fromSlider.oninput = () => this.controlFromSlider(fromSlider, toSlider);
+    toSlider.oninput = () => this.controlToSlider(fromSlider, toSlider);
   },
   watch: {
     fromSlider() {

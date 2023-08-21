@@ -140,9 +140,10 @@
         <div class="container">
           <chart :title="'Rendimento diário'" :chart-data="historyChartData" />
         </div>
-        <hr style="margin-top: 0.7em;" />
-        <div class="container" style="padding-bottom: 1em;">
+        <hr style="margin-top: 0.7em" />
+        <div class="container" style="padding-bottom: 1em">
           <range-slider
+            ref="rangeSlider"
             :data-array="history"
             @changed="updateGraph"
           ></range-slider>
@@ -500,6 +501,16 @@ export default {
         this.deposits = JSON.parse(depositsString);
       }
     },
+    resetGraphFilterRange() {
+      this.graphFilterRange = [
+        this.history.length > 23 ? this.history.length - 23 : 0,
+        this.history.length - 1,
+      ];
+      this.$refs.rangeSlider.updateSlider(
+        this.graphFilterRange[0],
+        this.graphFilterRange[1]
+      );
+    },
     getSavedGrossAmount() {
       return this.history[this.history.length - 1].gross;
     },
@@ -536,10 +547,10 @@ export default {
             return;
           }
         }
-        if (this.invalidDay()) {
-          alert("Esperar até o fim do proximo dia útil.");
-          return;
-        }
+        // if (this.invalidDay()) {
+        //   alert("Esperar até o fim do proximo dia útil.");
+        //   return;
+        // }
         this.calculate();
       } else this.calculateFirstTime();
     },
@@ -594,6 +605,7 @@ export default {
       this.history.push(result);
       localStorage.setItem("history", JSON.stringify(this.history));
       this.resetForm();
+      this.resetGraphFilterRange();
       if (!this.historyExists) this.historyExists = true;
     },
     addDeposit() {
