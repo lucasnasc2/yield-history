@@ -127,12 +127,12 @@
           <span>{{ currencySymbol() }} {{ converter(monthlyYield) }}</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
-          <span>Taxa média de juros diário (mês)</span>
+          <span>Taxa média diária (mês)</span>
           <span>{{ averageDayRate }}%</span>
         </div>
         <div class="flex-layout justify-space-between no-padding">
-          <span>Taxa acumulada de juros (mês)</span>
-          <span>{{ monthlyRate }}% (x12 = {{ (monthlyRate * 12).toFixed(3) }}%)</span>
+          <span>Taxa acumulada (mês)</span>
+          <span>{{ monthlyRate }}% (x12 = {{ (monthlyRate * 12).toFixed(2) }}%)</span>
         </div>
       </div>
       <!-- deposits -->
