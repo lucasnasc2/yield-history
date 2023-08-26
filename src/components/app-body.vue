@@ -175,8 +175,27 @@
         </div>
       </div>
       <!-- projection chart -->
-      <div class="card">
-        <chart :title="'Projeção'" :chart-data="projectionChartData" />
+      <div class="card no-padding">
+        <div class="container">
+          <chart :title="'Projeção'" :chart-data="projectionChartData" />
+        </div>
+        <hr style="margin-top: 0.7em" />
+        <div class="container">
+          <div class="flex-layout justify-space-between">
+            <span>Depósito mensal</span>
+            <div class="w-1/2">
+              <input
+                style="width: 100%; padding-left: 1.5em; font: inherit"
+                class="border-solid border-1 rounded-lg border-gray-500"
+                type="number"
+                v-model="formProjectionMonthlyDeposit"
+              /><span style="margin-left: -4.5em" v-if="currencyConverter"
+                >{{ currencySymbol() }}
+                {{ converter(parseFloat(formProjectionMonthlyDeposit)) }}</span
+              >
+            </div>
+          </div>
+        </div>
       </div>
       <!-- history editor -->
       <div class="card">
@@ -294,6 +313,7 @@ export default {
       formEditDeposits: "",
       formCurrencySource: "brl",
       formCurrencyTarget: "eur",
+      formProjectionMonthlyDeposit: "",
       graphFilterRange: new Array() as number[],
     };
   },
@@ -711,6 +731,7 @@ export default {
             timeZone: tz,
           })
       );
+      let fullDays = this.filterWeekendsFromInterval(initialTs, futureTs);
       let yieldPercent = percentage(
         latest.dy,
         this.offsetDeposits(latest.am, latest.ts)
@@ -721,6 +742,17 @@ export default {
         let total = i ? amountArray[i - 1] : latest.am;
         let currentYield = (yieldPercent / 100) * total;
         let newTotal = total + currentYield;
+
+        if (this.formProjectionMonthlyDeposit) {
+          let monthlyDeposit = parseFloat(this.formProjectionMonthlyDeposit);
+          let currentDayMonth = fullDays[i].getMonth();
+          if (i > 0) {
+            let pastDayMonth = fullDays[i - 1].getMonth();
+            if (currentDayMonth != pastDayMonth) {
+              newTotal = newTotal + monthlyDeposit;
+            }
+          }
+        }
         amountArray.push(newTotal);
         yieldArray.push(currentYield);
       });
