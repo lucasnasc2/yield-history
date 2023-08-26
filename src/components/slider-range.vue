@@ -6,47 +6,46 @@
         type="range"
         v-model="fromSlider"
         min="0"
-        :max="dataArray.length - 1"
+        :max="length"
       />
       <input
         id="toSlider"
         type="range"
         v-model="toSlider"
         :min="0"
-        :max="dataArray.length - 1"
+        :max="length"
       />
     </div>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent } from "vue";
 export default defineComponent({
-  name: "rangeSlider",
+  name: "sliderRange",
   props: {
-    dataArray: {
-      type: Array,
+    length: {
+      type: Number,
       required: true,
     },
   },
   data: function () {
     return {
-      fromSlider: this.dataArray.length > 23 ? this.dataArray.length - 23 : 0,
-      toSlider: this.dataArray.length - 1,
+      fromSlider: (this.length > 23 ? this.length - 23 : 0).toString(),
+      toSlider: this.length.toString(),
     };
   },
   methods: {
-    updateSlider(from, to) {
-      this.fromSlider = from;
-      this.toSlider = to;
-      const fromSlider = document.querySelector("#fromSlider");
-      const toSlider = document.querySelector("#toSlider");
-      this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
-    },
-    fillSlider(from, to, sliderColor, rangeColor, controlSlider) {
-      const rangeDistance = to.max - to.min;
-      const fromPosition = from.value - to.min;
-      const toPosition = to.value - to.min;
+    fillSlider(
+      from: HTMLInputElement,
+      to: HTMLInputElement,
+      sliderColor: string,
+      rangeColor: string,
+      controlSlider: HTMLInputElement
+    ) {
+      const rangeDistance = parseFloat(to.max) - parseFloat(to.min);
+      const fromPosition = parseFloat(from.value) - parseFloat(to.min);
+      const toPosition = parseFloat(to.value) - parseFloat(to.min);
       controlSlider.style.background = `linear-gradient(
       to right,
       ${sliderColor} 0%,
@@ -56,40 +55,45 @@ export default defineComponent({
       ${sliderColor} ${(toPosition / rangeDistance) * 100}%, 
       ${sliderColor} 100%)`;
     },
-    controlFromSlider(fromSlider, toSlider) {
+    controlFromSlider(
+      fromSlider: HTMLInputElement,
+      toSlider: HTMLInputElement
+    ) {
       const [from, to] = this.getParsed(fromSlider, toSlider);
       this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
       if (from > to) {
-        fromSlider.value = to;
+        fromSlider.value = to.toString();
       }
     },
-    controlToSlider(fromSlider, toSlider) {
+    controlToSlider(fromSlider: HTMLInputElement, toSlider: HTMLInputElement) {
       const [from, to] = this.getParsed(fromSlider, toSlider);
       this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
       this.setToggleAccessible(toSlider);
       if (from <= to) {
-        toSlider.value = to;
+        toSlider.value = to.toString();
       } else {
-        toSlider.value = from;
+        toSlider.value = from.toString();
       }
     },
-    getParsed(currentFrom, currentTo) {
+    getParsed(currentFrom: HTMLInputElement, currentTo: HTMLInputElement) {
       const from = parseInt(currentFrom.value, 10);
       const to = parseInt(currentTo.value, 10);
       return [from, to];
     },
-    setToggleAccessible(currentTarget) {
-      const toSlider = document.querySelector("#toSlider");
-      if (Number(currentTarget.value) <= 0) {
-        toSlider.style.zIndex = 2;
+    setToggleAccessible(currentTarget: HTMLInputElement) {
+      const toSlider = document.querySelector("#toSlider") as HTMLInputElement;
+      if (parseInt(currentTarget.value) <= 0) {
+        toSlider.style.zIndex = "2";
       } else {
-        toSlider.style.zIndex = 0;
+        toSlider.style.zIndex = "0";
       }
     },
   },
   mounted() {
-    const fromSlider = document.querySelector("#fromSlider");
-    const toSlider = document.querySelector("#toSlider");
+    const fromSlider = document.querySelector(
+      "#fromSlider"
+    ) as HTMLInputElement;
+    const toSlider = document.querySelector("#toSlider") as HTMLInputElement;
     this.fillSlider(fromSlider, toSlider, "#C6C6C6", "#ba4de3", toSlider);
     this.setToggleAccessible(toSlider);
     fromSlider.oninput = () => this.controlFromSlider(fromSlider, toSlider);
@@ -97,16 +101,13 @@ export default defineComponent({
   },
   watch: {
     fromSlider() {
-      this.$emit("changed", [
-        parseInt(this.fromSlider),
-        parseInt(this.toSlider),
-      ]);
+      this.$emit("changed", [this.fromSlider, this.toSlider]);
     },
     toSlider() {
-      this.$emit("changed", [
-        parseInt(this.fromSlider),
-        parseInt(this.toSlider),
-      ]);
+      this.$emit("changed", [this.fromSlider, this.toSlider]);
+    },
+    length(v) {
+      this.toSlider = v.toString();
     },
   },
 });
@@ -144,7 +145,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 input[type="range"]::-moz-range-thumb {
-  -webkit-appearance: none;
   pointer-events: all;
   width: 20px;
   height: 20px;

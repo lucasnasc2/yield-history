@@ -19,6 +19,7 @@ export default {
 @import "./css/variables.css";
 body {
   margin: 0;
+  max-width: 650px;
 }
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;

@@ -2,6 +2,7 @@
   <div class="wrapper">
     <!-- entry form-->
     <div class="card">
+      <!-- Gross Amount input-->
       <div v-if="!historyExists" class="flex-layout justify-space-between pb-2">
         <span>Montante Bruto</span>
         <input
@@ -10,7 +11,7 @@
           v-model="formGrossAmount"
         />
       </div>
-
+      <!-- Current Amount input-->
       <div class="flex-layout justify-space-between pb-2">
         <span>Montante Atual</span>
         <input
@@ -19,7 +20,7 @@
           v-model="formCurrentAmount"
         />
       </div>
-
+      <!-- register button-->
       <div class="flex-layout justify-end max-width">
         <button class="button positive w-1/2" v-on:click="evaluateCondition">
           registrar
@@ -132,7 +133,10 @@
         </div>
         <div class="flex-layout justify-space-between no-padding">
           <span>Taxa acumulada (mês)</span>
-          <span>{{ monthlyRate }}% (x12 = {{ (monthlyRate * 12).toFixed(2) }}%)</span>
+          <span
+            >{{ monthlyRate }}% (x12 =
+            {{ (monthlyRate * 12).toFixed(2) }}%)</span
+          >
         </div>
       </div>
       <!-- deposits -->
@@ -163,11 +167,11 @@
         </div>
         <hr style="margin-top: 0.7em" />
         <div class="container" style="padding-bottom: 1em">
-          <range-slider
+          <slider-range
             ref="rangeSlider"
-            :data-array="history"
+            :length="historyLength"
             @changed="updateGraph"
-          ></range-slider>
+          ></slider-range>
         </div>
       </div>
       <!-- projection chart -->
@@ -247,7 +251,7 @@
 
 <script lang="ts">
 import chart from "./chart.vue";
-import rangeSlider from "./slider-range.vue";
+import sliderRange from "./slider-range.vue";
 import getDays from "../misc/getDaysFromInterval.js";
 import axios from "axios";
 import type {
@@ -269,8 +273,8 @@ const percentage = (partialValue: number, totalValue: number) => {
 
 //vue instance
 export default {
-  name: "HelloWorld",
-  components: { chart, rangeSlider },
+  name: "AppBody",
+  components: { chart, sliderRange },
   data: function () {
     return {
       history: new Array() as HistoryArchive,
@@ -298,6 +302,9 @@ export default {
     this.checkHistory();
   },
   computed: {
+    historyLength() {
+      return this.history.length - 1;
+    },
     currencyActive() {
       return !!this.currencyList.length;
     },
@@ -330,9 +337,13 @@ export default {
         let currentMonth = currentDate.getMonth();
         return checkMonth == currentMonth;
       };
-      return this.history.reduce(
-        (partialSum, r) => (tsIsCurrentMonth(r.ts) ? partialSum + r.dy : 0),
-        0
+      return Number(
+        this.history
+          .reduce(
+            (partialSum, r) => (tsIsCurrentMonth(r.ts) ? partialSum + r.dy : 0),
+            0
+          )
+          .toFixed(2)
       );
     },
     averageDayRate() {
@@ -564,10 +575,6 @@ export default {
         this.history.length > 23 ? this.history.length - 23 : 0,
         this.history.length - 1,
       ];
-      this.$refs.rangeSlider.updateSlider(
-        this.graphFilterRange[0],
-        this.graphFilterRange[1]
-      );
     },
     getSavedGrossAmount() {
       return this.history[this.history.length - 1].gross;
@@ -662,6 +669,7 @@ export default {
     saveResult(result: HistoryObject) {
       this.history.push(result);
       localStorage.setItem("history", JSON.stringify(this.history));
+      this.updateHistory();
       this.resetForm();
       this.resetGraphFilterRange();
       if (!this.historyExists) this.historyExists = true;
@@ -703,8 +711,9 @@ export default {
             timeZone: tz,
           })
       );
-      let yieldPercent = parseFloat(
-        percentage(latest.dy, this.offsetDeposits(latest.am, latest.ts))
+      let yieldPercent = percentage(
+        latest.dy,
+        this.offsetDeposits(latest.am, latest.ts)
       );
       let amountArray: number[] = [];
       let yieldArray: number[] = [];
