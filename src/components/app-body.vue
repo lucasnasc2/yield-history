@@ -732,10 +732,9 @@ export default {
           })
       );
       let fullDays = this.filterWeekendsFromInterval(initialTs, futureTs);
-      let yieldPercent = percentage(
-        latest.dy,
-        this.offsetDeposits(latest.am, latest.ts)
-      );
+      let yieldPercent = this.averageDayRate;
+      console.log(yieldPercent);
+      
       let amountArray: number[] = [];
       let yieldArray: number[] = [];
       days.forEach((day, i) => {
