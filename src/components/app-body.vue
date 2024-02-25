@@ -174,6 +174,12 @@
           ></slider-range>
         </div>
       </div>
+      <!-- monthly yield history chart -->
+      <div class="card no-padding">
+        <div class="container">
+          <chart :title="'Rendimento mensal'" :chart-data="monthlyYiedChartData" />
+        </div>
+      </div>
       <!-- projection chart -->
       <div class="card no-padding">
         <div class="container">
@@ -315,6 +321,7 @@ export default {
       formCurrencyTarget: "eur",
       formProjectionMonthlyDeposit: "",
       graphFilterRange: new Array() as number[],
+      monthlyGraphFilterRange: new Array() as number[],
     };
   },
   mounted() {
@@ -463,6 +470,35 @@ export default {
       };
       return data;
     },
+    monthlyYiedChartData() {
+      let { labelArray, monthlyYieldArray, percentageMonthlyYieldArray, monthlyAmountArray } =
+        this.getMonthlyYieldChartData();
+
+      let data = {
+        labels: labelArray,
+        datasets: [
+          {
+            label: this.currencySymbol(),
+            backgroundColor: "#ba4de3",
+            data: monthlyYieldArray,
+            yAxisID: "y",
+          },
+          {
+            label: "%",
+            backgroundColor: "#530082",
+            data: percentageMonthlyYieldArray,
+            yAxisID: "y1",
+          },
+          {
+            label: "Total",
+            backgroundColor: "#658185",
+            data: monthlyAmountArray,
+            yAxisID: "y2",
+          },
+        ],
+      };
+      return data;
+    },
     projectionChartData() {
       let { days, yieldArray, amountArray } = this.calculateProjection(12);
       yieldArray = yieldArray.map((a) => this.converter(a, 3));
@@ -498,6 +534,29 @@ export default {
   methods: {
     updateGraph(arr: []) {
       this.graphFilterRange = arr;
+    },
+    getMonthlyYieldChartData() {
+      let monthlyYieldArray: number[] = [];
+      let percentageMonthlyYieldArray: number[] = [];
+      let monthlyAmountArray: number[] = [];
+      let labelArray: string[] = [];
+      let monthlySum: number = 0
+      this.history.forEach((a, i) => {
+        let newDate = new Date(a.ts)
+        let pastDate = new Date(this.history[i == 0 ? i : i-1].ts)
+        let newMonth = newDate.getMonth()
+        let pastMonth = pastDate.getMonth()
+        if (newMonth == pastMonth) {
+          monthlySum = monthlySum + a.dy
+        } else {
+            labelArray.push(new Date(this.history[i-1].ts).toLocaleString(locale, { month: "short" , year: 'numeric'}));
+            percentageMonthlyYieldArray.push(percentage(monthlySum, this.history[i-1].am))
+            monthlyAmountArray.push(this.history[i-1].am)
+            monthlyYieldArray.push(monthlySum);
+            monthlySum = a.dy;
+        }
+      });
+      return { labelArray, monthlyYieldArray, percentageMonthlyYieldArray, monthlyAmountArray };
     },
     getChartHistoryData() {
       let dailyYieldArray: number[] = [];
@@ -716,8 +775,12 @@ export default {
     addToGrossAmount(deposit: number) {
       let currentAmount = this.history[this.history.length - 1].am;
       let grossAmount = this.history[this.history.length - 1].gross;
-      this.history[this.history.length - 1].gross = deposit + grossAmount;
-      this.history[this.history.length - 1].am = deposit + currentAmount;
+      this.history[this.history.length - 1].gross = parseFloat(
+        (deposit + grossAmount).toFixed(2)
+      );
+      this.history[this.history.length - 1].am = parseFloat(
+        (deposit + currentAmount).toFixed(2)
+      );
       localStorage.setItem("history", JSON.stringify(this.history));
     },
     calculateProjection(months: number) {
@@ -733,8 +796,6 @@ export default {
       );
       let fullDays = this.filterWeekendsFromInterval(initialTs, futureTs);
       let yieldPercent = this.averageDayRate;
-      console.log(yieldPercent);
-      
       let amountArray: number[] = [];
       let yieldArray: number[] = [];
       days.forEach((day, i) => {
