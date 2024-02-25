@@ -551,8 +551,8 @@ export default {
         } else {
             labelArray.push(new Date(this.history[i-1].ts).toLocaleString(locale, { month: "short" , year: 'numeric'}));
             percentageMonthlyYieldArray.push(percentage(monthlySum, this.history[i-1].am))
-            monthlyAmountArray.push(this.history[i-1].am)
-            monthlyYieldArray.push(monthlySum);
+            monthlyAmountArray.push(this.converter(this.history[i-1].am))
+            monthlyYieldArray.push(this.converter(monthlySum));
             monthlySum = a.dy;
         }
       });
