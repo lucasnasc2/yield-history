@@ -21,7 +21,7 @@ export default defineConfig({
         name: "Yeild History Logger",
         short_name: "YHL",
         description: "Keep track of the yeild on an investment.",
-        theme_color: "#ba4de3",
+        theme_color: "#ffffff",
         icons: [
           {
             src: "pwa-192x192.png",
