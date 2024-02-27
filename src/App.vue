@@ -1,7 +1,8 @@
 <template>
-  <div id="app">
+  <div id="app" style="display: flex; flex-direction: column; min-height: 100vh;">
     <header class="header">Registro de rendimentos</header>
-    <app-body />
+    <app-body style="flex: 1;" />
+    <footer class="text-sm text-center pb-1" style="margin-top: auto;">Developed by <a href="https://github.com/lucasnasc2">Lucas N. C.</a></footer>
   </div>
 </template>
 
