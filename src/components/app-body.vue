@@ -77,6 +77,23 @@
     </div>
 
     <div v-if="historyExists">
+      <div class="card">
+        <!-- Current Amount input-->
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Montante Atual</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+            type="number"
+            v-model="formCurrentAmount"
+          />
+        </div>
+        <!-- register button-->
+        <div class="flex-layout justify-end max-width">
+          <button class="button positive w-1/2" v-on:click="evaluateCondition">
+            registrar
+          </button>
+        </div>
+      </div>
       <!-- new deposit form-->
       <div class="card">
         <div class="flex-layout justify-space-between pb-2">
