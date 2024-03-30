@@ -577,10 +577,10 @@ export default {
       let fields = this.formCurrencySource && this.formCurrencyTarget;
       if (!fields) return;
       try {
-        let params = `${this.formCurrencySource}/${this.formCurrencyTarget}`;
-        let endpoint = `https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/${params}.json`;
+        let endpoint = `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${this.formCurrencySource}.json`;
         let response = await axios.get(endpoint);
-        this.currencyRate = response.data[this.formCurrencyTarget];
+        let rates = response.data[this.formCurrencySource];
+        this.currencyRate = rates[this.formCurrencyTarget];
         this.currencyDate = response.data.date;
         console.log(response);
       } catch (error) {
@@ -590,7 +590,7 @@ export default {
     async getCurrencyList() {
       try {
         let response = await axios.get(
-          "https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies.min.json"
+          "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.min.json"
         );
         this.currencyList = Object.keys(response.data);
         this.getCurrency();
