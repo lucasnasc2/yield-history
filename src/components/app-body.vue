@@ -1,34 +1,99 @@
 <template>
   <div class="wrapper">
-    <!-- entry form-->
-    <div class="card">
-      <!-- Gross Amount input-->
-      <div v-if="!historyExists" class="flex-layout justify-space-between pb-2">
-        <span>Montante Bruto</span>
-        <input
-          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
-          type="number"
-          v-model="formGrossAmount"
-        />
+    <!-- starting menu-->
+    <div class="card" v-if="!historyExists && startingMode == ''">
+      <div style="height: 129px;">
+        <div class="container">
+          <chart :height="85" :title-display="false" :legend-display="false" :chart-data="placeholderChartData" />
+        </div>
       </div>
-      <!-- Current Amount input-->
-      <div class="flex-layout justify-space-between pb-2">
-        <span>Montante Atual</span>
-        <input
-          class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
-          type="number"
-          v-model="formCurrentAmount"
-        />
-      </div>
-      <!-- register button-->
-      <div class="flex-layout justify-end max-width">
-        <button class="button positive w-1/2" v-on:click="evaluateCondition">
-          registrar
+      <div class="flex-layout">
+          <button class="grow1 button positive" v-on:click="startingMode = 'import'">
+            Importar dados
+          </button>
+          <button class="grow1 button positive" v-on:click="startingMode = 'scratch'">
+            Começar do zero
+          </button>
+        </div>
+    </div>
+    <!-- Import -->
+    <div v-if="!historyExists && startingMode == 'import'" class="card">
+      <div>
+        <button class="mx-2" v-on:click="startingMode = ''">
+          <mdi-arrow-left size="24" />
         </button>
+        <span class="text-lg ml-2">Importar datos</span>
+      </div>
+      <div v-if="stagedFile == null" class="card flex bg-gray-200" style="height: 81px;">
+          <div class="self-center text-center flex-1">nenhum arquivo</div>
+        </div>
+        <div v-else v-on:click="clearStagedDataAlert" class="card flex no-border" style="height: 81px;background-color: var(--primary); cursor: pointer;">
+          <div class="self-center text-center flex-1" style="color: white;">{{stagedFileName}}  {{ Math.round(stagedFileSize/1000) + "kb"}}</div>
+        </div>
+        <div class="flex-layout">
+          <button class="grow1 button bg-gray-200" v-on:click="openFilePicker">
+            Escolher arquivo
+          </button>
+          <button class="grow1 button positive" v-on:click="importFile">
+            Importar
+          </button>
+        </div>
+    </div>
+    <!-- scratch form-->
+    <div v-if="!historyExists && startingMode == 'scratch'" class="card no-padding">
+      <div class="container">
+        <button class="mx-2" v-on:click="startingMode = ''">
+          <mdi-arrow-left size="24" />
+        </button>
+        <span class="text-lg ml-2">Primeiro registro</span>
+      </div>
+      <hr />
+      <div class="container">
+        <!-- Gross Amount input-->
+        <div v-if="!historyExists" class="flex-layout justify-space-between pb-2">
+          <span>Montante Bruto</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+            type="number"
+            v-model="formGrossAmount"
+          />
+        </div>
+        <!-- Current Amount input-->
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Montante Atual</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+            type="number"
+            v-model="formCurrentAmount"
+          />
+        </div>
+        <!-- register button-->
+        <div class="flex-layout justify-end max-width">
+          <button class="button positive w-1/2" v-on:click="evaluateCondition">
+            registrar
+          </button>
+        </div>
       </div>
     </div>
 
     <div v-if="historyExists">
+      <div class="card">
+        <!-- Current Amount input-->
+        <div class="flex-layout justify-space-between pb-2">
+          <span>Montante Atual</span>
+          <input
+            class="border-solid border-1 rounded-lg border-gray-500 w-1/2"
+            type="number"
+            v-model="formCurrentAmount"
+          />
+        </div>
+        <!-- register button-->
+        <div class="flex-layout justify-end max-width">
+          <button class="button positive w-1/2" v-on:click="evaluateCondition">
+            registrar
+          </button>
+        </div>
+      </div>
       <!-- new deposit form-->
       <div class="card">
         <div class="flex-layout justify-space-between pb-2">
@@ -261,8 +326,17 @@
           </button>
         </div>
       </div>
+      <!-- export data -->
+      <div class="flex-layout pb-2 pt-4">
+        <button
+          class="span-button button bg-gray-200"
+          v-on:click="exportData"
+        >
+          exportar dados
+        </button>
+      </div>
       <!-- delete data -->
-      <div class="flex-layout pb-6 pt-4">
+      <div class="flex-layout pb-6">
         <button
           class="span-button button bg-gray-200"
           v-on:click="deleteAllData"
@@ -271,10 +345,12 @@
         </button>
       </div>
     </div>
+    <input type="file" ref="fileInput" @change="stageImportedFile" accept=".json" style="display: none">
   </div>
 </template>
 
 <script lang="ts">
+import { ref } from 'vue';
 import chart from "./chart.vue";
 import sliderRange from "./slider-range.vue";
 import getDays from "../misc/getDaysFromInterval.js";
@@ -286,6 +362,7 @@ import type {
   DepositObject,
 } from "@/types/History.interface";
 
+
 //globals
 /** browser timezone */
 let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -295,6 +372,9 @@ let locale = Intl.DateTimeFormat().resolvedOptions().locale;
 const percentage = (partialValue: number, totalValue: number) => {
   return Number(((100 * partialValue) / totalValue).toFixed(3));
 };
+/** return todays date in yyyymmdd format */
+const getTodayDate = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
+const fileInput = ref<HTMLInputElement | null>(null);
 
 //vue instance
 export default {
@@ -308,9 +388,12 @@ export default {
       currencyRate: 0,
       currencyDate: "",
       historyExists: false,
+      startingMode: "", 
       currencyConverter: false,
       editHistoryForm: false,
       editDepositsForm: false,
+      editImportForm: false,
+      formImport: "",
       formGrossAmount: "",
       formCurrentAmount: "",
       formDepositAmount: "",
@@ -322,6 +405,11 @@ export default {
       formProjectionMonthlyDeposit: "",
       graphFilterRange: new Array() as number[],
       monthlyGraphFilterRange: new Array() as number[],
+      stagedFile: null as any,
+      stagedFileHistoryString:"",
+      stagedFileDepositsString:"",
+      stagedFileName: "",
+      stagedFileSize: 0,
     };
   },
   mounted() {
@@ -446,6 +534,19 @@ export default {
           return Math.abs(amount - offset);
         } else return amount;
       };
+    },
+    placeholderChartData() {
+      let data = {
+        labels: ["jan","fev","mar","abr","mai"],
+        datasets: [
+          {
+            backgroundColor: "#ba4de3",
+            data: [300,335,310,345,365],
+            yAxisID: "y",
+          }
+        ],
+      };
+      return data;
     },
     historyChartData() {
       let { labelArray, percentageDailyYieldArray, dailyYieldArray } =
@@ -832,6 +933,97 @@ export default {
       this.formEditHistory = "";
       this.editHistoryForm = false;
     },
+    openImportForm() {
+      this.editImportForm = true;
+    },
+    openFilePicker() {
+      if (this.$refs.fileInput) {
+        (this.$refs.fileInput as HTMLInputElement).click();
+      }
+    },
+    stageImportedFile(event: Event) {
+      const selectedFile = (event.target as HTMLInputElement).files?.[0];
+      if (selectedFile) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const jsonString = event.target?.result as string;
+            const jsonData = JSON.parse(jsonString);
+            console.log("Parsed JSON data:", jsonData);
+            // Assign the parsed JSON data to a variable or use it as needed
+            // For example, you can assign it to a component data property
+            this.stagedFile = jsonData; // Assuming 'parsedData' is a component data property
+            this.stagedFileHistoryString = JSON.stringify(jsonData.history);
+            this.stagedFileDepositsString = JSON.stringify(jsonData.deposits);
+            this.stagedFileName = selectedFile.name
+            this.stagedFileSize = selectedFile.size
+          } catch (error) {
+            console.error("Error parsing JSON:", error);
+          }
+        };
+        reader.readAsText(selectedFile);
+        (event.target as HTMLInputElement).value = '';
+      }
+    },
+    importFile() {
+      if (!this.stagedFile) {
+        alert("Escolha un arquivo");
+        return;
+      }
+      localStorage.setItem("history", this.stagedFileHistoryString);
+      localStorage.setItem("deposits", this.stagedFileDepositsString);
+      this.checkHistory()
+      this.updateHistory();
+      this.updateDeposits();
+      this.clearStagedData();
+      this.startingMode = "";
+    },
+    clearStagedDataAlert() {
+      if (confirm("Descartar arquivo?") == true) {
+        this.clearStagedData()
+      }
+    },
+    clearStagedData() {
+      this.stagedFile = null;
+      this.stagedFileName = "";
+      this.stagedFileSize = 0;
+      this.stagedFileHistoryString = "";
+      this.stagedFileDepositsString = "";
+    },
+    exportData() {
+      let data = {
+        history: this.history,
+        deposits: this.deposits
+      }
+      let dt = getTodayDate();
+      // Convert the object to a JSON string
+      const jsonStr = JSON.stringify(data, null, 2);
+
+      // Create a Blob object from the JSON string
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+
+      // Create a link element
+      const link = document.createElement('a');
+
+      // Set the href attribute of the link to the Blob object
+      link.href = window.URL.createObjectURL(blob);
+
+      // Set the download attribute of the link
+      link.download = "yieldHistory_backup_" + dt;
+
+      // Append the link to the body
+      document.body.appendChild(link);
+
+      // Programmatically click the link to trigger the download
+      link.click();
+
+      // Remove the link from the DOM
+      document.body.removeChild(link);
+    },
+    saveImportForm() {
+      const {deposits , history} = JSON.parse(this.formImport)
+      console.log(deposits ,history)
+    },
     openEditHistory() {
       this.formEditHistory = localStorage.history;
       this.editHistoryForm = true;
@@ -867,7 +1059,9 @@ export default {
         window.confirm("Apagar todos os dados e reiniciar aplicação?") === true
       ) {
         localStorage.removeItem("history");
+        localStorage.removeItem("deposits");
         this.history = [];
+        this.deposits = [];
         this.historyExists = false;
       } else return;
     },
@@ -877,6 +1071,9 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+svg {
+  display: inline !important
+}
 input {
   padding: 3px 6px !important;
 }
@@ -891,6 +1088,9 @@ textarea {
   border: 1px solid grey;
   padding: 10px;
   margin: 10px 0;
+}
+.no-border{
+  border-style: none;
 }
 .container {
   padding: 10px;

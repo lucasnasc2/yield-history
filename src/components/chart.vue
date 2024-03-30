@@ -51,6 +51,14 @@ export default defineComponent({
       type: String,
       default: "no title",
     },
+    titleDisplay: {
+      type: Boolean,
+      default: true,
+    },
+    legendDisplay: {
+      display: Boolean,
+      default: true
+    },
     datasetIdKey: {
       type: String,
       default: "label",
@@ -75,9 +83,12 @@ export default defineComponent({
         stacked: false,
         plugins: {
           title: {
-            display: true,
+            display: this.titleDisplay,
             text: this.title,
           },
+          legend: {
+            display: this.legendDisplay
+          }
         },
         scales: {
           y: {
